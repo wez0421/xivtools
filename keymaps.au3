@@ -1,0 +1,31 @@
+$actionMap = ObjCreate("Scripting.Dictionary")
+$actionMap.Add("Comfort Zone",      "^2,true")
+$actionMap.Add("Inner Quiet",       "^3,true")
+$actionMap.Add("Steady Hand II",    "^4,true")
+$actionMap.Add("Precise Touch",     "^5,false")
+$actionMap.Add("Basic Touch",       "^6,false")
+$actionMap.Add("Both Touch",        "^5^6,false")
+$actionMap.Add("Manipulation",      "^7,false")
+
+$actionMap.Add("Piece by Piece",    "#,false")
+
+$actionMap.Add("Steady Hand",       "^w,true")
+$actionMap.Add("Innovation",        "^e,true")
+$actionMap.Add("Great Strides",     "^r,true")
+$actionMap.Add("Ingenuity II",      "^t,true")
+$actionMap.Add("Byregots Blessing", "^v,true")
+$actionMap.Add("Byregot's Blessing", "^v,true")
+$actionMap.Add("Careful Synthesis II", "^b,false")
+$actionMap.Add("Careful Synthesis III", "W,false")
+
+$actionMap.Add("Standard Touch",    "^s,false")
+$actionMap.Add("Advanced Touch",    "^d,false")
+$actionMap.Add("Waste Not II",      "^f,true")
+$actionMap.Add("Master's Mend",     "^g,false")
+
+$actionMap.Add("Tricks of the Trade","^z,false")
+$actionMap.Add("Standard Synthesis","^x,false")
+$actionMap.Add("Basic Synthesis",   "^c,false")
+
+$actionMap.Add("Master's Mend II",  "X,false")
+$actionMap.Add("Hasty Touch",       "C,false")
