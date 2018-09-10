@@ -1,3 +1,5 @@
+#include <File.au3>
+
 Global $r_prism = [ _
     "Careful Synthesis II"]
 

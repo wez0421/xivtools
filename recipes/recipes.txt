@@ -1,0 +1,6 @@
+/ac "Inner Quiet" <wait.2>
+/ac "Steady Hand" <wait.3>
+/ac "Innovation" <wait.2>
+/ac "Great Strides" <wait.3>
+/ac "Advanced Touch" <wait.3>
+/ac "Standard Synthesis" <wait.3>
