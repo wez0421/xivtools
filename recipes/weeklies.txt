@@ -1,0 +1,14 @@
+/ac "Inner Quiet" <wait.2>
+/ac "Manipulation II" <wait.2>
+/ac "Steady Hand II" <wait.2>
+/ac "Patient Touch" <wait.3>
+/ac "Advanced Touch" <wait.3>
+/ac "Advanced Touch" <wait.3>
+/ac "Advanced Touch" <wait.3>
+/ac "Advanced Touch" <wait.3>
+/ac "Innovation" <wait.2>
+/ac "Tricks of the Trade" <wait.2>
+/ac "Great Strides" <wait.2>
+/ac "Byregot's Brow" <wait.3>
+/ac "Careful Synthesis III" <wait.3>
+/ac "Careful Synthesis III" <wait.3>
