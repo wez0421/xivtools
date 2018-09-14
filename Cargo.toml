@@ -1,0 +1,7 @@
+[package]
+name = "xiv_craft"
+version = "0.1.0"
+authors = ["chris"]
+
+[dependencies]
+config = "0.9.0"
