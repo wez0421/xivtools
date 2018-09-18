@@ -1,6 +1,7 @@
 # Add keybinds below
 # (Add comments on what sections they're in?
 # Shortcuts -> Crafting Log
+
 "Crafting Log"   = "n"
 # System -> Cycle through UI Component Tabs (Back
 "Cycle Backward" = "["
