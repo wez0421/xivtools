@@ -8,7 +8,7 @@ Opt("MouseClickDownDelay", 100)
 Opt("GUIOnEventMode", 1) ; Change to OnEvent mode
 Opt('GUICoordMode', 0)
 
-
+Global $hWnd = WinWait("FINAL FANTASY XIV", "", 10)
 Global $kRecipeDir = @ScriptDir & "\recipes\"
 
 Func WaitSeconds($amt)
@@ -16,26 +16,7 @@ Func WaitSeconds($amt)
  EndFunc
 
 Func SendKey($key)
-   ControlSend($hWnd, "", "", $key, 0)
-EndFunc
-
-Func ListRecipes(ByRef $recipe)
-    $files = _FileListToArray($kRecipeDir, "*.txt");, $FLTA_FILES)
-	if @error Then
-	   MsgBox($IDOK, "Error!", "Error: " & @error & @CR)
-	   Exit
-	Else
-	  For $i = 1 To $files[0]
-		 $file = $kRecipeDir & $files[$i]
-		 $data = FileRead($file)
-		 ;ConsoleWrite("Read in from " & $file & ":" & @CR & $data)
-		 $cmds = StringSplit($data, @CR)
-		 for $i = 1 to $cmds[0]
-			$cmd = $cmds[$i]
-			_ArrayInsert($recipe, StringRegExp($cmd, '/ac "(.*)" <wait.(\d)>', $STR_REGEXPARRAYMATCH))
-		 next
-	  Next
-   EndIf
+   ;ControlSend($hWnd, "", "", $key, 0)
 EndFunc
 
 ; Takes a line from a macro and splits it into the action and the time needed
@@ -50,7 +31,7 @@ Func LineToactions(ByRef $line, ByRef $action, ByRef $wait)
    $wait = $split[1]
 EndFunc
 
-Func RunRecipe(Const $recipe, Const $count)
+Func RunRecipe(Const $recipe)
    $file_contents = FileRead($kRecipeDir & $recipe)
    If @error Then
 	  MsgBox("$Error reading recipe file: " & @error & @CR)
@@ -64,7 +45,7 @@ Func RunRecipe(Const $recipe, Const $count)
    For $i = 1 To $actions[0] - 1
 	  local $action, $wait
 	  LineToActions($actions[$i], $action, $wait)
-	  ConsoleWrite("action: '" & $action & "', wait:  '" & $wait & "'" & @CR)
+	  ;ConsoleWrite("action: '" & $action & "', wait:  '" & $wait & "'" & @CR)
 	  if $actionMap.item($action) == "" Then
 		 MsgBox($IDOK, "Error!", "Missing keymap for '" & $action & "'! Aborting..." & @CR)
 		 Exit
@@ -113,7 +94,8 @@ Func CreateUI($recipes)
    For $i = 1 To Ubound($MacroList)-1
 	  $cData &= "|" & $MacroList[$i]
    Next
-   GUICtrlSetData($UICombo, $cData, $MacroList[1])
+   ConsoleWrite("Data going in is: " & $cData & @CR)
+   GUICtrlSetData($UICombo, $cData, "Pick")
    GUICtrlCreateLabel("Count: ", 0, 30)
    $UICount = GUICtrlCreateInput("1", 50, 0)
    $UIButton = GUICtrlCreateButton("Craft", 50, -1)
@@ -127,16 +109,17 @@ Func CreateUI($recipes)
 EndFunc
 
 Func CraftCallback()
+   local $recipe = GUICtrlRead($UICombo) + 1
+   ConsoleWrite("Going to use " & $recipe & "which is " & $MacroList[$recipe] &  @CR)
+   local $count = Number(GUICtrlRead($UICount))
    GUISetState(@SW_HIDE)
-   $hWnd = WinWait("FINAL FANTASY XIV", "", 10)
    WinActivate($hWnd)
-
-   for $i = 1 to Number(GUICtrlRead($UICount))
+   for $i = 1 to $count
 	  SendKey($actionMap("Confirm"))
 	  SendKey($actionMap("Confirm"))
 	  SendKey($actionMap("Confirm"))
 	  WaitSeconds(2) ; Delay waiting for the craft progress window to pop up
-	  RunRecipe($MacroList[$UICombo + 1], 1)
+	  RunRecipe($MacroList[$recipe])
 	  WaitSeconds(2) ; wait for the item completion to finish
    Next
    SendKey("{ESC}")
@@ -144,7 +127,7 @@ Func CraftCallback()
    Exit
 EndFunc
 local $recipes
-ListRecipes($recipes)
+;ListRecipes($recipes)
 CreateUI($recipes)
 
 ; Idle loop while waiting for button press
