@@ -1,7 +1,5 @@
 //use std::collections::HashMap;
 mod recipe;
-//use config;
-#[macro_use]
 use std::path::PathBuf;
 use structopt::StructOpt;
 

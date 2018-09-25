@@ -1,5 +1,3 @@
-use failure::format_err;
-use failure::Error;
 use regex::Regex;
 
 // Extract the action and wait times for a given line in a macro. Returns a
