@@ -21,19 +21,7 @@ struct Opt {
 }
 
 fn main() -> Result<(), String> {
-    let opt = Opt::from_args();
+    let _opt = Opt::from_args();
 
-    println!("{:?}", opt);
-    let entries = xiv_macro::parse_file(opt.macro_file);
-    for i in &entries {
-        println!("{}", i);
-    }
-
-    //let _recipe = recipe::Recipe {};
-    //let settings_file = &args[1];
-    //let _macro_file = &args[2];
-    //let _run_count = &args[3];
-    //let mut settings = config::Config::default();
-    //settings.merge(config::File::with_name(settings_file))?;
-    return Ok(());
+    Ok(())
 }

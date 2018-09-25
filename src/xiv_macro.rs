@@ -1,9 +1,6 @@
 use regex::Regex;
 use std::fmt;
 use std::fs;
-use std::fs::File;
-use std::io;
-use std::io::prelude::*;
 use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
@@ -33,9 +30,7 @@ fn parse_buffer(buffer: &str) -> Vec<MacroEntry> {
 }
 
 pub fn parse_file(macro_file: PathBuf) -> Vec<MacroEntry> {
-    let mut buffer = String::new();
-
-    buffer = fs::read_to_string(macro_file).expect("Failed to open macro file");
+    let buffer = fs::read_to_string(macro_file).expect("Failed to open macro file");
     parse_buffer(&buffer)
 }
 
@@ -58,7 +53,7 @@ pub fn parse_line(line: &str) -> Result<MacroEntry, String> {
 
     Ok(MacroEntry {
         action: action.to_string(),
-        wait: wait,
+        wait,
     })
 }
 
@@ -69,7 +64,7 @@ mod tests {
     #[test]
     fn test_macro_single_unqoted_no_wait() {
         // single word, unquoted, with no wait
-        let entry = parse_line(r#"/ac Innovation"#)?;
+        let entry = parse_line(r#"/ac Innovation"#).unwrap();
         assert_eq!(entry.action, "Innovation");
         assert_eq!(entry.wait, 3);
     }
