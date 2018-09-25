@@ -67,12 +67,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_macro_single_unqoted_no_wait() -> Result<(), String> {
+    fn test_macro_single_unqoted_no_wait() {
         // single word, unquoted, with no wait
         let entry = parse_line(r#"/ac Innovation"#)?;
         assert_eq!(entry.action, "Innovation");
         assert_eq!(entry.wait, 3);
-        Ok(())
     }
 
     #[test]
