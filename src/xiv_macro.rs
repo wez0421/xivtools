@@ -1,12 +1,12 @@
 use regex::Regex;
+use std::fmt;
 use std::fs;
 use std::fs::File;
 use std::io;
-use std::fmt;
 use std::io::prelude::*;
 use std::path::PathBuf;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct MacroEntry {
     action: String,
     wait: u32,
@@ -14,17 +14,20 @@ pub struct MacroEntry {
 
 impl fmt::Display for MacroEntry {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "( action: {}, wait: {})", self.action, self.wait)   
+        write!(
+            f,
+            "MacroEntry ( action: {}, wait: {})",
+            self.action, self.wait
+        )
     }
 }
 
-fn parse_buffer(buffer: &str) -> Vec<MacroEntry>{ 
+fn parse_buffer(buffer: &str) -> Vec<MacroEntry> {
     let mut parsed_macro = vec![];
     buffer
+        .trim()
         .lines()
-        .for_each(|line| {
-            parsed_macro.push(parse_line(line.trim()).unwrap())
-        });
+        .for_each(|line| parsed_macro.push(parse_line(line.trim()).unwrap()));
 
     parsed_macro
 }
@@ -53,60 +56,119 @@ pub fn parse_line(line: &str) -> Result<MacroEntry, String> {
         None => 3,
     };
 
-    Ok(MacroEntry { action: action.to_string(), wait: wait })
+    Ok(MacroEntry {
+        action: action.to_string(),
+        wait: wait,
+    })
 }
 
-#[test]
-fn test_macro_single_unqoted_no_wait() -> Result<(), String> {
-    // single word, unquoted, with no wait
-    let entry = parse_line(r#"/ac Innovation"#)?;
-    assert_eq!(entry.action, "Innovation");
-    assert_eq!(entry.wait, 3);
-    Ok(())
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-fn test_macro_single_qoted_no_wait() {
-    // single word, quoted, with no wait
-    let entry = parse_line(r#"/ac "Innovation""#).unwrap();
-    assert_eq!(entry.action, "Innovation");
-    assert_eq!(entry.wait, 3);
-}
+    #[test]
+    fn test_macro_single_unqoted_no_wait() -> Result<(), String> {
+        // single word, unquoted, with no wait
+        let entry = parse_line(r#"/ac Innovation"#)?;
+        assert_eq!(entry.action, "Innovation");
+        assert_eq!(entry.wait, 3);
+        Ok(())
+    }
 
-#[test]
-fn test_macro_single_unqoted_with_wait() {
-    // single word, unquoted, with a wait
-    let entry = parse_line(r#"/ac Innovation <wait.2>"#).unwrap();
-    assert_eq!(entry.action, "Innovation");
-    assert_eq!(entry.wait, 2);
-}
+    #[test]
+    fn test_macro_single_qoted_no_wait() {
+        // single word, quoted, with no wait
+        let entry = parse_line(r#"/ac "Innovation""#).unwrap();
+        assert_eq!(entry.action, "Innovation");
+        assert_eq!(entry.wait, 3);
+    }
 
-#[test]
-fn test_macro_single_quoted_with_wait() {
-    // single word, quoted, with a wait
-    let entry = parse_line(r#"/ac "Innovation" <wait.2>"#).unwrap();
-    assert_eq!(entry.action, "Innovation");
-    assert_eq!(entry.wait, 2);
-}
+    #[test]
+    fn test_macro_single_unqoted_with_wait() {
+        // single word, unquoted, with a wait
+        let entry = parse_line(r#"/ac Innovation <wait.2>"#).unwrap();
+        assert_eq!(entry.action, "Innovation");
+        assert_eq!(entry.wait, 2);
+    }
 
-#[test]
-fn test_macro_double_quoted_no_wait() {
-    // two words, quoted, with no wait
-    let entry = parse_line(r#"/ac "Byregot's Blessing""#).unwrap();
-    assert_eq!(entry.action, "Byregot's Blessing");
-    assert_eq!(entry.wait, 3);
-}
+    #[test]
+    fn test_macro_single_quoted_with_wait() {
+        // single word, quoted, with a wait
+        let entry = parse_line(r#"/ac "Innovation" <wait.2>"#).unwrap();
+        assert_eq!(entry.action, "Innovation");
+        assert_eq!(entry.wait, 2);
+    }
 
-#[test]
-fn test_macro_double_quoted_with_wait() {
-    // two words, quoted, with a wait
-    let entry = parse_line(r#"/ac "Byregot's Blessing" <wait.3>"#).unwrap();
-    assert_eq!(entry.action, "Byregot's Blessing");
-    assert_eq!(entry.wait, 3);
-}
+    #[test]
+    fn test_macro_double_quoted_no_wait() {
+        // two words, quoted, with no wait
+        let entry = parse_line(r#"/ac "Byregot's Blessing""#).unwrap();
+        assert_eq!(entry.action, "Byregot's Blessing");
+        assert_eq!(entry.wait, 3);
+    }
 
-#[test]
-fn test_macro_empty() {
-    let result = parse_line(r#""#);
-    assert_eq!(result.is_err(), true);
+    #[test]
+    fn test_macro_double_quoted_with_wait() {
+        // two words, quoted, with a wait
+        let entry = parse_line(r#"/ac "Byregot's Blessing" <wait.3>"#).unwrap();
+        assert_eq!(entry.action, "Byregot's Blessing");
+        assert_eq!(entry.wait, 3);
+    }
+
+    #[test]
+    fn test_macro_empty() {
+        let result = parse_line(r#""#);
+        assert_eq!(result.is_err(), true);
+    }
+
+    #[test]
+    fn test_macro_buffer() {
+        let test_macro = r#"
+        /ac "Comfort Zone" <wait.3>
+        /ac "Inner Quiet" <wait.2>
+        /ac "Great Strides" <wait.2>
+        /ac "Manipulation II" <wait.3>
+        /ac "Byregot's Blessing" <wait.3>
+        /ac "Careful Synthesis III" <wait.3>"#;
+
+        let actual = parse_buffer(test_macro);
+        assert_eq!(validate_test_entries(actual), true);
+    }
+
+    #[test]
+    fn test_macro_file() {
+        let actual = parse_file(PathBuf::from("src/test_macro"));
+        assert_eq!(validate_test_entries(actual), true);
+    }
+
+    fn validate_test_entries(actual: Vec<MacroEntry>) -> bool {
+        let expected = [
+            MacroEntry {
+                action: "Comfort Zone".to_string(),
+                wait: 3,
+            },
+            MacroEntry {
+                action: "Inner Quiet".to_string(),
+                wait: 2,
+            },
+            MacroEntry {
+                action: "Great Strides".to_string(),
+                wait: 2,
+            },
+            MacroEntry {
+                action: "Manipulation II".to_string(),
+                wait: 3,
+            },
+            MacroEntry {
+                action: "Byregot's Blessing".to_string(),
+                wait: 3,
+            },
+            MacroEntry {
+                action: "Careful Synthesis III".to_string(),
+                wait: 3,
+            },
+        ];
+
+        (actual == expected)
+    }
 }
