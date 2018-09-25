@@ -1,5 +1,5 @@
 //use std::collections::HashMap;
-mod recipe;
+mod xiv_macro;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -24,6 +24,10 @@ fn main() -> Result<(), String> {
     let opt = Opt::from_args();
 
     println!("{:?}", opt);
+    let entries = xiv_macro::parse_file(opt.macro_file);
+    for i in &entries {
+        println!("{}", i);
+    }
 
     //let _recipe = recipe::Recipe {};
     //let settings_file = &args[1];
@@ -31,7 +35,5 @@ fn main() -> Result<(), String> {
     //let _run_count = &args[3];
     //let mut settings = config::Config::default();
     //settings.merge(config::File::with_name(settings_file))?;
-    let (foo, bar) = recipe::parse_macro_line(r#"/ac Innovation <wait.2>""#).unwrap();
-    println!("{} {}", foo, bar);
     return Ok(());
 }

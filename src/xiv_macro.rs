@@ -1,0 +1,112 @@
+use regex::Regex;
+use std::fs;
+use std::fs::File;
+use std::io;
+use std::fmt;
+use std::io::prelude::*;
+use std::path::PathBuf;
+
+#[derive(Debug)]
+pub struct MacroEntry {
+    action: String,
+    wait: u32,
+}
+
+impl fmt::Display for MacroEntry {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "( action: {}, wait: {})", self.action, self.wait)   
+    }
+}
+
+fn parse_buffer(buffer: &str) -> Vec<MacroEntry>{ 
+    let mut parsed_macro = vec![];
+    buffer
+        .lines()
+        .for_each(|line| {
+            parsed_macro.push(parse_line(line.trim()).unwrap())
+        });
+
+    parsed_macro
+}
+
+pub fn parse_file(macro_file: PathBuf) -> Vec<MacroEntry> {
+    let mut buffer = String::new();
+
+    buffer = fs::read_to_string(macro_file).expect("Failed to open macro file");
+    parse_buffer(&buffer)
+}
+
+// Extract the action and wait times for a given line in a macro. Returns a
+// String in the event of an error indicating a malformed macro.
+pub fn parse_line(line: &str) -> Result<MacroEntry, String> {
+    let re = Regex::new(r#"/ac ["]?([a-zA-Z' ]+[a-zA-Z])["]?(?: <wait.([0-9])>)?"#)
+        .expect("error compiling regex");
+    let values = re
+        .captures(line)
+        .ok_or_else(|| format!("Unable to parse line: {}", line))?;
+    let action = values.get(1).map_or("", |m| m.as_str());
+    let wait = match values.get(2) {
+        Some(x) => x
+            .as_str()
+            .parse::<u32>()
+            .map_err(|_| format!("failed to parse as number: {}", x.as_str()))?,
+        None => 3,
+    };
+
+    Ok(MacroEntry { action: action.to_string(), wait: wait })
+}
+
+#[test]
+fn test_macro_single_unqoted_no_wait() -> Result<(), String> {
+    // single word, unquoted, with no wait
+    let entry = parse_line(r#"/ac Innovation"#)?;
+    assert_eq!(entry.action, "Innovation");
+    assert_eq!(entry.wait, 3);
+    Ok(())
+}
+
+#[test]
+fn test_macro_single_qoted_no_wait() {
+    // single word, quoted, with no wait
+    let entry = parse_line(r#"/ac "Innovation""#).unwrap();
+    assert_eq!(entry.action, "Innovation");
+    assert_eq!(entry.wait, 3);
+}
+
+#[test]
+fn test_macro_single_unqoted_with_wait() {
+    // single word, unquoted, with a wait
+    let entry = parse_line(r#"/ac Innovation <wait.2>"#).unwrap();
+    assert_eq!(entry.action, "Innovation");
+    assert_eq!(entry.wait, 2);
+}
+
+#[test]
+fn test_macro_single_quoted_with_wait() {
+    // single word, quoted, with a wait
+    let entry = parse_line(r#"/ac "Innovation" <wait.2>"#).unwrap();
+    assert_eq!(entry.action, "Innovation");
+    assert_eq!(entry.wait, 2);
+}
+
+#[test]
+fn test_macro_double_quoted_no_wait() {
+    // two words, quoted, with no wait
+    let entry = parse_line(r#"/ac "Byregot's Blessing""#).unwrap();
+    assert_eq!(entry.action, "Byregot's Blessing");
+    assert_eq!(entry.wait, 3);
+}
+
+#[test]
+fn test_macro_double_quoted_with_wait() {
+    // two words, quoted, with a wait
+    let entry = parse_line(r#"/ac "Byregot's Blessing" <wait.3>"#).unwrap();
+    assert_eq!(entry.action, "Byregot's Blessing");
+    assert_eq!(entry.wait, 3);
+}
+
+#[test]
+fn test_macro_empty() {
+    let result = parse_line(r#""#);
+    assert_eq!(result.is_err(), true);
+}
