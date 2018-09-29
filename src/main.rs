@@ -1,7 +1,10 @@
 //use std::collections::HashMap;
 mod xiv_macro;
+use std::fs;
 use std::path::PathBuf;
 use structopt::StructOpt;
+use failure::Error;
+use config;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
@@ -18,10 +21,33 @@ struct Opt {
     /// Path to the file containing the XIV macro to use
     #[structopt(name = "macro file", parse(from_os_str))]
     macro_file: PathBuf,
+    /// Path to the config file.
+    #[structopt(long = "config", default_value="config.toml")]
+    config_file: String,
 }
 
-fn main() -> Result<(), String> {
-    let _opt = Opt::from_args();
+fn main() -> Result<(), Error> {
+    let opt = Opt::from_args();
+    println!("opt {:?}", opt);
 
+    // Grab and parse the config file. Errors are all especially fatal so
+    // let them bubble up if they occur.
+    let mut config = config::Config::default();
+    config.merge(config::File::with_name(&opt.config_file))?;
+    let macro_contents = xiv_macro::parse_file(opt.macro_file)?;
+    let system_keys = config.get_table("system_keybinds")?;
+    let crafting_keys = config.get_table("crafting_keybinds")?;
+    println!("System Keys:");
+    for (key, value) in &system_keys {
+        println!("\t{} = '{}'", key, value);
+    }
+    println!("Crafting Keys:");
+    for (key, value) in &crafting_keys {
+        println!("\t{} = '{}'", key, value);
+    }
+    println!("Macro to Run");
+    for entry in macro_contents {
+        println!("\t{}", entry);
+    }
     Ok(())
 }

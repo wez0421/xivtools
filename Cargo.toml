@@ -5,6 +5,10 @@ name = "xiv_craft"
 version = "0.1.0"
 
 [dependencies]
+config = "0.9.0"
 regex = "1"
 structopt = "0.2"
 toml = "0.4.7"
+failure = "0.1.2"
+winapi = "0.3.6"
+user32-sys = "0.2.0"

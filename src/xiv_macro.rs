@@ -2,6 +2,7 @@ use regex::Regex;
 use std::fmt;
 use std::fs;
 use std::path::PathBuf;
+use failure::Error;
 
 #[derive(Debug, PartialEq)]
 pub struct MacroEntry {
@@ -29,9 +30,9 @@ fn parse_buffer(buffer: &str) -> Vec<MacroEntry> {
     parsed_macro
 }
 
-pub fn parse_file(macro_file: PathBuf) -> Vec<MacroEntry> {
-    let buffer = fs::read_to_string(macro_file).expect("Failed to open macro file");
-    parse_buffer(&buffer)
+pub fn parse_file(macro_file: PathBuf) -> Result<Vec<MacroEntry>, Error> {
+    let buffer = fs::read_to_string(macro_file)?;
+    Ok(parse_buffer(&buffer))
 }
 
 // Extract the action and wait times for a given line in a macro. Returns a
@@ -132,7 +133,7 @@ mod tests {
     #[test]
     fn test_macro_file() {
         let actual = parse_file(PathBuf::from("src/test_macro"));
-        assert_eq!(validate_test_entries(actual), true);
+        assert_eq!(validate_test_entries(actual.unwrap()), true);
     }
 
     fn validate_test_entries(actual: Vec<MacroEntry>) -> bool {

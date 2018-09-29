@@ -1,7 +1,7 @@
 # Add keybinds below
 # (Add comments on what sections they're in?
+[system_keybinds]
 # Shortcuts -> Crafting Log
-
 "Crafting Log"   = "n"
 # System -> Cycle through UI Component Tabs (Back
 "Cycle Backward" = "["
@@ -11,6 +11,7 @@
 "Confirm"        = "="
 
 # For modifer combinations use + for SHIFT and ^ for CTRL
+[crafting_keybinds]
 "Advanced Touch"        = "^3"
 "Basic Synthesis"       = "^c"
 "Basic Touch"           = "^6"
