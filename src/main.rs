@@ -1,10 +1,9 @@
 //use std::collections::HashMap;
 mod xiv_macro;
-use std::fs;
+use config;
+use failure::Error;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use failure::Error;
-use config;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
@@ -22,7 +21,7 @@ struct Opt {
     #[structopt(name = "macro file", parse(from_os_str))]
     macro_file: PathBuf,
     /// Path to the config file.
-    #[structopt(long = "config", default_value="config.toml")]
+    #[structopt(long = "config", default_value = "config.toml")]
     config_file: String,
 }
 

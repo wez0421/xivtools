@@ -1,8 +1,8 @@
+use failure::Error;
 use regex::Regex;
 use std::fmt;
 use std::fs;
 use std::path::PathBuf;
-use failure::Error;
 
 #[derive(Debug, PartialEq)]
 pub struct MacroEntry {
