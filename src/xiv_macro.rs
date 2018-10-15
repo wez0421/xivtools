@@ -6,8 +6,8 @@ use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
 pub struct MacroEntry {
-    action: String,
-    wait: u32,
+    pub action: String,
+    pub wait: u64,
 }
 
 impl fmt::Display for MacroEntry {
@@ -47,7 +47,7 @@ pub fn parse_line(line: &str) -> Result<MacroEntry, String> {
     let wait = match values.get(2) {
         Some(x) => x
             .as_str()
-            .parse::<u32>()
+            .parse::<u64>()
             .map_err(|_| format!("failed to parse as number: {}", x.as_str()))?,
         None => 3,
     };
@@ -63,7 +63,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_macro_single_unqoted_no_wait() {
+    fn macro_single_unqoted_no_wait() {
         // single word, unquoted, with no wait
         let entry = parse_line(r#"/ac Innovation"#).unwrap();
         assert_eq!(entry.action, "Innovation");
@@ -71,7 +71,7 @@ mod tests {
     }
 
     #[test]
-    fn test_macro_single_qoted_no_wait() {
+    fn macro_single_qoted_no_wait() {
         // single word, quoted, with no wait
         let entry = parse_line(r#"/ac "Innovation""#).unwrap();
         assert_eq!(entry.action, "Innovation");
@@ -79,7 +79,7 @@ mod tests {
     }
 
     #[test]
-    fn test_macro_single_unqoted_with_wait() {
+    fn macro_single_unqoted_with_wait() {
         // single word, unquoted, with a wait
         let entry = parse_line(r#"/ac Innovation <wait.2>"#).unwrap();
         assert_eq!(entry.action, "Innovation");
@@ -87,7 +87,7 @@ mod tests {
     }
 
     #[test]
-    fn test_macro_single_quoted_with_wait() {
+    fn macro_single_quoted_with_wait() {
         // single word, quoted, with a wait
         let entry = parse_line(r#"/ac "Innovation" <wait.2>"#).unwrap();
         assert_eq!(entry.action, "Innovation");
@@ -95,7 +95,7 @@ mod tests {
     }
 
     #[test]
-    fn test_macro_double_quoted_no_wait() {
+    fn macro_double_quoted_no_wait() {
         // two words, quoted, with no wait
         let entry = parse_line(r#"/ac "Byregot's Blessing""#).unwrap();
         assert_eq!(entry.action, "Byregot's Blessing");
@@ -103,7 +103,7 @@ mod tests {
     }
 
     #[test]
-    fn test_macro_double_quoted_with_wait() {
+    fn macro_double_quoted_with_wait() {
         // two words, quoted, with a wait
         let entry = parse_line(r#"/ac "Byregot's Blessing" <wait.3>"#).unwrap();
         assert_eq!(entry.action, "Byregot's Blessing");
@@ -111,13 +111,13 @@ mod tests {
     }
 
     #[test]
-    fn test_macro_empty() {
+    fn macro_empty() {
         let result = parse_line(r#""#);
         assert_eq!(result.is_err(), true);
     }
 
     #[test]
-    fn test_macro_buffer() {
+    fn macro_buffer() {
         let test_macro = r#"
         /ac "Comfort Zone" <wait.3>
         /ac "Inner Quiet" <wait.2>
@@ -131,7 +131,7 @@ mod tests {
     }
 
     #[test]
-    fn test_macro_file() {
+    fn macro_file() {
         let actual = parse_file(PathBuf::from("src/test_macro"));
         assert_eq!(validate_test_entries(actual.unwrap()), true);
     }
