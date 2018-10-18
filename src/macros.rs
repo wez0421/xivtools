@@ -21,22 +21,22 @@ impl fmt::Display for MacroEntry {
 }
 
 fn parse_buffer(buffer: &str) -> Vec<MacroEntry> {
-    let mut parsed_macro = vec![];
+    let mut parsed_macros = vec![];
     buffer
         .trim()
         .lines()
-        .for_each(|line| parsed_macro.push(parse_line(line.trim()).unwrap()));
+        .for_each(|line| parsed_macros.push(parse_line(line.trim()).unwrap()));
 
-    parsed_macro
+    parsed_macros
 }
 
-pub fn parse_file(macro_file: PathBuf) -> Result<Vec<MacroEntry>, Error> {
-    let buffer = fs::read_to_string(macro_file)?;
+pub fn parse_file(macros_file: PathBuf) -> Result<Vec<MacroEntry>, Error> {
+    let buffer = fs::read_to_string(macros_file)?;
     Ok(parse_buffer(&buffer))
 }
 
-// Extract the action and wait times for a given line in a macro. Returns a
-// String in the event of an error indicating a malformed macro.
+// Extract the action and wait times for a given line in a macros. Returns a
+// String in the event of an error indicating a malformed macros.
 pub fn parse_line(line: &str) -> Result<MacroEntry, String> {
     let re = Regex::new(r#"/ac ["]?([a-zA-Z' ]+[a-zA-Z])["]?(?: <wait.([0-9])>)?"#)
         .expect("error compiling regex");
@@ -63,7 +63,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn macro_single_unqoted_no_wait() {
+    fn macros_single_unqoted_no_wait() {
         // single word, unquoted, with no wait
         let entry = parse_line(r#"/ac Innovation"#).unwrap();
         assert_eq!(entry.action, "Innovation");
@@ -71,7 +71,7 @@ mod tests {
     }
 
     #[test]
-    fn macro_single_qoted_no_wait() {
+    fn macros_single_qoted_no_wait() {
         // single word, quoted, with no wait
         let entry = parse_line(r#"/ac "Innovation""#).unwrap();
         assert_eq!(entry.action, "Innovation");
@@ -79,7 +79,7 @@ mod tests {
     }
 
     #[test]
-    fn macro_single_unqoted_with_wait() {
+    fn macros_single_unqoted_with_wait() {
         // single word, unquoted, with a wait
         let entry = parse_line(r#"/ac Innovation <wait.2>"#).unwrap();
         assert_eq!(entry.action, "Innovation");
@@ -87,7 +87,7 @@ mod tests {
     }
 
     #[test]
-    fn macro_single_quoted_with_wait() {
+    fn macros_single_quoted_with_wait() {
         // single word, quoted, with a wait
         let entry = parse_line(r#"/ac "Innovation" <wait.2>"#).unwrap();
         assert_eq!(entry.action, "Innovation");
@@ -95,7 +95,7 @@ mod tests {
     }
 
     #[test]
-    fn macro_double_quoted_no_wait() {
+    fn macros_double_quoted_no_wait() {
         // two words, quoted, with no wait
         let entry = parse_line(r#"/ac "Byregot's Blessing""#).unwrap();
         assert_eq!(entry.action, "Byregot's Blessing");
@@ -103,7 +103,7 @@ mod tests {
     }
 
     #[test]
-    fn macro_double_quoted_with_wait() {
+    fn macros_double_quoted_with_wait() {
         // two words, quoted, with a wait
         let entry = parse_line(r#"/ac "Byregot's Blessing" <wait.3>"#).unwrap();
         assert_eq!(entry.action, "Byregot's Blessing");
@@ -111,14 +111,14 @@ mod tests {
     }
 
     #[test]
-    fn macro_empty() {
+    fn macros_empty() {
         let result = parse_line(r#""#);
         assert_eq!(result.is_err(), true);
     }
 
     #[test]
-    fn macro_buffer() {
-        let test_macro = r#"
+    fn macros_buffer() {
+        let test_macros = r#"
         /ac "Comfort Zone" <wait.3>
         /ac "Inner Quiet" <wait.2>
         /ac "Great Strides" <wait.2>
@@ -126,13 +126,13 @@ mod tests {
         /ac "Byregot's Blessing" <wait.3>
         /ac "Careful Synthesis III" <wait.3>"#;
 
-        let actual = parse_buffer(test_macro);
+        let actual = parse_buffer(test_macros);
         assert_eq!(validate_test_entries(actual), true);
     }
 
     #[test]
-    fn macro_file() {
-        let actual = parse_file(PathBuf::from("src/test_macro"));
+    fn macros_file() {
+        let actual = parse_file(PathBuf::from("src/test_macros"));
         assert_eq!(validate_test_entries(actual.unwrap()), true);
     }
 

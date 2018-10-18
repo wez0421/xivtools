@@ -1,10 +1,10 @@
 //use std::collections::HashMap;
-mod xiv_macro;
-mod xiv_ui;
-use self::xiv_ui::HWND;
-use std::ptr::null_mut;
+mod macros;
+mod ui;
+use self::ui::HWND;
 use failure::Error;
 use std::path::PathBuf;
+use std::ptr::null_mut;
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -24,8 +24,8 @@ struct Opt {
     count: u32,
     #[structopt(short = "o", long = "offset", default_value = "0")]
     offset: u32,
-    /// Path to the file containing the XIV macro to use
-    #[structopt(name = "macro file", parse(from_os_str))]
+    /// Path to the file containing the XIV macros to use
+    #[structopt(name = "macros file", parse(from_os_str))]
     macro_file: PathBuf,
 }
 
@@ -34,27 +34,27 @@ fn main() -> Result<(), Error> {
 
     // Grab and parse the config file. Errors are all especially fatal so
     // let them bubble up if they occur.
-    let macro_contents = xiv_macro::parse_file(opt.macro_file)?;
+    let macros_contents = macros::parse_file(opt.macro_file)?;
     println!("Macro to Run:");
 
-    let mut window: xiv_ui::HWND = null_mut();
-    xiv_ui::find_xiv_window(&mut window);
-    xiv_ui::reset_ui(&window);
-    xiv_ui::reset_action_keys(&window);
+    let mut window: ui::HWND = ui::platform_default_hwnd();
+    ui::find_xiv_window(&mut window);
+    ui::reset_ui(&window);
+    ui::reset_action_keys(&window);
 
     if opt.collectable {
-        xiv_ui::toggle_collectable_status(&window);
+        ui::toggle_collectable_status(&window);
     }
 
-    xiv_ui::bring_craft_window(&window, &opt.item, opt.offset);
+    ui::bring_craft_window(&window, &opt.item, opt.offset);
     for i in 0..opt.count {
-        xiv_ui::craft_item(&window, &macro_contents, opt.collectable);  
+        ui::craft_item(&window, &macros_contents, opt.collectable);
     }
-    
-    xiv_ui::reset_ui(&window);
+
+    ui::reset_ui(&window);
 
     if opt.collectable {
-        xiv_ui::toggle_collectable_status(&window);
+        ui::toggle_collectable_status(&window);
     }
     Ok(())
 }

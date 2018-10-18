@@ -1,8 +1,7 @@
-
+pub use self::ui_impl::*;
+use crate::macros;
 use std::thread::sleep;
 use std::time::Duration;
-pub use self::ui_impl::*;
-use crate::xiv_macro;
 
 pub fn find_xiv_window(handle: &mut HWND) {
     platform_find_xiv_window(handle)
@@ -31,22 +30,22 @@ pub fn reset_action_keys(window: &HWND) {
     sleep(Duration::from_millis(250));
 }
 
-pub fn craft_item(window: &HWND, actions: &Vec<xiv_macro::MacroEntry>, collectable: bool) {
+pub fn craft_item(window: &HWND, actions: &Vec<macros::MacroEntry>, collectable: bool) {
     // Sending confirm to handle both first and subsequent crafts
     send_key(window, UI_CONFIRM);
-       send_key(window, UI_CONFIRM);
+    send_key(window, UI_CONFIRM);
     // Wait longer for the craft UI to come up
     sleep(Duration::from_secs(2));
     for entry in actions {
         send_action(window, &entry.action, entry.wait);
     }
+    sleep(Duration::from_secs(1));
+    if collectable {
+        send_key(window, UI_CONFIRM);
+        send_key(window, UI_CONFIRM);
         sleep(Duration::from_secs(1));
-        if collectable {
-            send_key(window, UI_CONFIRM);
-            send_key(window, UI_CONFIRM);
-            sleep(Duration::from_secs(1));
-        }
-                    sleep(Duration::from_secs(2));
+    }
+    sleep(Duration::from_secs(2));
 }
 
 // Clears the UI windows
@@ -90,17 +89,19 @@ fn send_string(window: &HWND, s: &str) {
     sleep(Duration::from_millis(100));
 }
 
-#[cfg(windows)] pub(self) mod ui_impl {
-    use std::ffi::CStr;
+#[cfg(windows)]
+pub(self) mod ui_impl {
     use failure::Error;
+    use std::ffi::CStr;
     use winapi::shared::basetsd::LONG_PTR;
     use winapi::shared::minwindef::{BOOL, UINT};
     pub use winapi::shared::windef::HWND;
-    pub use winapi::um::winuser::{
-        EnumWindows, GetWindowTextA, PostMessageA
-    };
+    pub use winapi::um::winuser::{EnumWindows, GetWindowTextA, PostMessageA};
 
-    pub use winapi::um::winuser::{ VK_SPACE, WM_CHAR, WM_KEYDOWN, WM_KEYUP, VK_RETURN, VK_DOWN, VK_UP, VK_PAUSE, VK_END, VK_ESCAPE } ;
+    pub use winapi::um::winuser::{
+        VK_DOWN, VK_END, VK_ESCAPE, VK_PAUSE, VK_RETURN, VK_SPACE, VK_UP, WM_CHAR, WM_KEYDOWN,
+        WM_KEYUP,
+    };
     pub const UI_CRAFT: i32 = 0x4e; // N key
     pub const UI_ENTER: i32 = VK_RETURN;
     pub const UI_CONFIRM: i32 = VK_PAUSE;
@@ -127,11 +128,17 @@ fn send_string(window: &HWND, s: &str) {
         1
     }
     pub fn platform_find_xiv_window(handle: &mut HWND) {
-        unsafe { EnumWindows(Some(enum_callback), handle as *mut HWND as LONG_PTR); }
+        unsafe {
+            EnumWindows(Some(enum_callback), handle as *mut HWND as LONG_PTR);
+        }
     }
 
     pub fn platform_send_char(window: &HWND, msg: u32, wparam: i32) -> i32 {
         unsafe { PostMessageA(*window, msg as UINT, wparam as usize, 0) }
+    }
+
+    pub fn platform_default_hwnd() -> HWND {
+        null_mut()
     }
 }
 
@@ -148,7 +155,7 @@ pub(self) mod ui_impl {
     pub const UI_ESCAPE: i32 = 'X' as i32;
     pub const UI_CHAR: u32 = 1;
     pub const UI_KEYDOWN: u32 = 2;
-    pub const UI_KEYUP: u32= 3;
+    pub const UI_KEYUP: u32 = 3;
     pub struct HWND {}
 
     pub fn platform_send_char(_: &HWND, msg: u32, wparam: i32) -> i32 {
@@ -161,6 +168,9 @@ pub(self) mod ui_impl {
         1
     }
 
-    pub fn platform_find_xiv_window(_: &mut HWND) {
+    pub fn platform_find_xiv_window(_: &mut HWND) {}
+
+    pub fn platform_default_hwnd() -> HWND {
+        HWND {}
     }
 }
