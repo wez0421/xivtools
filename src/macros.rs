@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn macros_file() {
-        let actual = parse_file(PathBuf::from("src/test_macros"));
+        let actual = parse_file(PathBuf::from("src/test_macro"));
         assert_eq!(validate_test_entries(actual.unwrap()), true);
     }
 

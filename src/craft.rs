@@ -1,18 +1,11 @@
 use crate::task::Task;
 use crate::ui;
-use std::time;
 
 // Runs through the set of tasks
 // TODO: make it actually run more than one task
 pub fn craft_items(tasks: &Vec<Task>) {
     for task in tasks {
-        // First we need to clear the UI
-        // TODO: can this be done with cancel instead?
-        for _ in 0..5 {
-            ui::escape();
-            ui::wait_ms(100);
-        }
-
+        clear_windows();
         if task.collectable {
             toggle_collectable();
         }
@@ -34,15 +27,16 @@ pub fn craft_items(tasks: &Vec<Task>) {
         // Time to craft the items
         execute_task(&task);
 
-        // Clear out the UI again 
-        for _ in 0..5 {
-            ui::escape();
-            ui::wait_ms(100);
-        }
-
+        clear_windows();
         if task.collectable {
             toggle_collectable();
         }
+    }
+}
+
+fn clear_windows() {
+    for _ in 0..10 {
+        ui::cancel();
     }
 }
 
@@ -55,9 +49,6 @@ fn select_recipe(task: &Task) {
 
     // It takse up to a second for results to populate
     ui::wait_secs(1);
-
-    // First confirm will get the pointer in the recipe list
-    ui::confirm();
 
     // Navigate to the offset we need
     for _ in 0..task.index {

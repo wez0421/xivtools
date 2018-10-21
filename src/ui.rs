@@ -52,11 +52,14 @@ pub(self) mod ui_impl {
     pub fn move_forward() {
         send_key(KEY_FORWARD);
     }
-    pub fn enter() {
-        send_key(KEY_ENTER);
-    }
     pub fn confirm() {
         send_key(KEY_CONFIRM);
+    }
+    pub fn cancel() {
+        send_key(KEY_CANCEL);
+    }
+    pub fn enter() {
+        send_key(KEY_ENTER);
     }
     pub fn escape() {
         send_key(VK_ESCAPE);
@@ -122,19 +125,19 @@ pub(self) mod ui_impl {
     pub fn cursor_down() {
         print!("<D> ");
     }
-    pub fn cursor_up() {
+    pub fn _cursor_up() {
         print!("<U> ");
     }
-    pub fn cursor_left() {
+    pub fn _cursor_left() {
         print!("<L> ");
     }
-    pub fn cursor_right() {
+    pub fn _cursor_right() {
         print!("<R> ");
     }
     pub fn move_backward() {
         print!("<- ");
      }
-    pub fn move_forward() {
+    pub fn _move_forward() {
         print!("-> ");
     }
     pub fn enter() {
@@ -143,7 +146,10 @@ pub(self) mod ui_impl {
     pub fn confirm() {
         println!("<OK> ");
     }
-    pub fn escape() {
+    pub fn cancel() {
+        println!("<CANCEL ");
+    }
+    pub fn _escape() {
         println!("<ESC> ");
     }
     pub fn send_char(c: char) {

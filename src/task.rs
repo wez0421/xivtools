@@ -2,13 +2,13 @@ use crate::macros::Action;
 
 pub enum Jobs {
     CUL,
-    ALC,
-    BSM,
-    ARM,
-    GSM,
-    CRP,
-    WVR,
-    LTW,
+    _ALC,
+    _BSM,
+    _ARM,
+    _GSM,
+    _CRP,
+    _WVR,
+    _LTW,
 }
 
 // A task represents crafting a specific item a given number of times

@@ -49,6 +49,6 @@ fn main() -> Result<(), Error> {
         actions: macro_contents,
         job: Jobs::CUL,
     }];
-    craft::craft_items(&tasks);
+    craft_items(&tasks);
     Ok(())
 }
