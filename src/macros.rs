@@ -34,7 +34,7 @@ pub fn parse_file(macros_file: PathBuf) -> Result<Vec<Action>, Error> {
 // Extract the action and wait times for a given line in a macros. Returns a
 // String in the event of an error indicating a malformed macros.
 pub fn parse_line(line: &str) -> Result<Action, String> {
-    let re = Regex::new(r#"/ac ["]?([a-zA-Z' ]+[a-zA-Z])["]?(?: <wait.([0-9])>)?"#)
+    let re = Regex::new(r#"/ac ["]?([a-zA-Z:' ]+[a-zA-Z])["]?(?: <wait.([0-9])>)?"#)
         .expect("error compiling regex");
     let values = re
         .captures(line)
@@ -63,6 +63,14 @@ mod tests {
         // single word, unquoted, with no wait
         let entry = parse_line(r#"/ac Innovation"#).unwrap();
         assert_eq!(entry.name, "Innovation");
+        assert_eq!(entry.wait, 3);
+    }
+
+    #[test]
+    fn macros_specialty() {
+        // single word, unquoted, with no wait
+        let entry = parse_line(r#"/ac "Specialty: Reflect""#).unwrap();
+        assert_eq!(entry.name, "Specialty: Reflect");
         assert_eq!(entry.wait, 3);
     }
 

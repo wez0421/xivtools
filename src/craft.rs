@@ -1,6 +1,7 @@
+use crate::cross;
+use crate::macros;
 use crate::task::Task;
 use crate::ui;
-
 // Runs through the set of tasks
 // TODO: make it actually run more than one task
 pub fn craft_items(tasks: &[Task]) {
@@ -12,14 +13,7 @@ pub fn craft_items(tasks: &[Task]) {
 
         // Bring up the crafting window itself and give it time to appear
         ui::open_craft_window();
-
-        // Loop backward through the UI 8 times to ensure we hit the text box
-        // no matter what crafting class we are. The text input boxes are strangely
-        // modal so that if we select them at any point they will hold on to focus
-        // for characters.
-        for _ in 0..8 {
-            ui::move_backward();
-        }
+        ui::wait_secs(1);
 
         // Navigate to the correct recipe based on the index provided
         select_recipe(&task);
@@ -35,14 +29,29 @@ pub fn craft_items(tasks: &[Task]) {
 }
 
 fn clear_windows() {
+    println!("clearing window...");
+    // Hitting escape closes one window each. 10 is excessive, but conservative
     for _ in 0..10 {
-        ui::cancel();
+        ui::escape();
     }
+
+    // Cancelling twice will close the System menu if it is open
+    ui::cancel();
+    ui::cancel();
+    ui::wait_secs(1);
 }
 
 fn select_recipe(task: &Task) {
-    // The search dialog should be selected, so send our string and search
+    println!("selecting recipe...");
+    // Loop backward through the UI 9 times to ensure we hit the text box
+    // no matter what crafting class we are. The text input boxes are strangely
+    // modal so that if we select them at any point they will hold on to focus
+    // for characters.
+    for _ in 0..9 {
+        ui::move_backward();
+    }
 
+    ui::confirm();
     send_string(&task.item_name);
     ui::wait_ms(200);
     ui::enter();
@@ -60,14 +69,19 @@ fn select_recipe(task: &Task) {
 }
 
 fn execute_task(task: &Task) {
-    for _ in 0..task.count {
-        // Hit the craft button and wait for the window to pop up
+    for task_index in 0..task.count {
+        // On subsequent crafts we need to navigate from the recipe to the Synthesize
+        // button again.
+        if task_index > 0 {
+            ui::confirm();
+        }
+        // Hit the Synthesize button and wait for the window to pop up
+        ui::confirm();
+        ui::confirm();
         ui::confirm();
         ui::wait_secs(2);
 
-        for action in &task.actions {
-            send_action(&action.name, action.wait);
-        }
+        execute_actions(&task.actions);
 
         // If the item is collectable we'll have an additional dialog
         if task.collectable {
@@ -76,7 +90,30 @@ fn execute_task(task: &Task) {
         }
 
         // Wait to get back to the crafting window
-        ui::wait_secs(1);
+        if task.collectable {
+            ui::wait_secs(1);
+            ui::confirm();
+            ui::wait_secs(4);
+        } else {
+            ui::wait_secs(4);
+        };
+    }
+}
+
+fn execute_actions(actions: &Vec<macros::Action>) {
+    for action in actions {
+        // Each character has a 20ms wait and the shortest action string
+        // we can make (observe or reclaim) is 240 ms, along with 50ms
+        // from send_action. That reduces how much time is needed to wait
+        // here for the GCD to finish. Although macros always wait in 2 or
+        // 3 second periods, the actual wait period is 2.0 and 2.5 seconds,
+        // so that's adjusted here.
+        send_action(&action.name);
+        if action.wait == 2 {
+            ui::wait_ms(1700);
+        } else {
+            ui::wait_ms(2200);
+        };
     }
 }
 
@@ -86,22 +123,13 @@ pub fn send_string(s: &str) {
     }
 }
 
-pub fn send_action(action: &str, wait: u64) {
-    // Activate the chat box
+pub fn send_action(action: &str) {
     ui::enter();
-    ui::wait_ms(100);
-    // Send /ac "<action>"
-    send_string("/ac \"");
-    send_string(action);
-    send_string("\"");
-    // Wait for text to fill out
-    ui::wait_ms(100);
-    // Commit the action
+    send_string(&format!("/ac \"{}\"\n", action));
+    ui::wait_ms(50);
     ui::enter();
-    // Wait for the action's gcd
-    ui::wait_secs(wait);
 }
 
 fn toggle_collectable() {
-    send_action("collectable synthesis", 2);
+    send_action(&"collectable synthesis");
 }

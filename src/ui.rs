@@ -1,4 +1,5 @@
 pub use self::ui_impl::*;
+use std::sync::Mutex;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -13,43 +14,45 @@ pub fn wait_secs(s: u64) {
 
 #[cfg(windows)]
 pub(self) mod ui_impl {
-    use failure::Error;
     use std::ffi::CStr;
+    use std::ptr::null_mut;
     use std::sync::Once;
+    use std::thread::sleep;
+    use std::time::Duration;
     use winapi::shared::basetsd::LONG_PTR;
     use winapi::shared::minwindef::{BOOL, UINT};
-    pub use winapi::shared::windef::HWND;
+    pub use winapi::shared::windef::{HWND, HWND__};
     pub use winapi::um::winuser::*;
     pub use winapi::um::winuser::{EnumWindows, GetWindowTextA, PostMessageA};
 
     // TODO: Configurable keybinds
-    const KEY_UP: char = VK_UNUMPAD8;
-    const KEY_DOWN: char = VK_NUMPAD2;
-    const KEY_LEFT: char = VK_NUMPAD4;
-    const KEY_RIGHT: char = VK_NUMPAD6;
-    const KEY_CONFIRM: char = VK_NUMPAD0;
-    const KEY_FORWARD: char = VK_NUMPAD9;
-    const KEY_BACKWARD: char = VK_NUMPAD7;
-    const KEY_CANCEL: char = VK_DECIMAL;
-    const KEY_ENTER: char = VK_ENTER;
+    const KEY_UP: i32 = VK_NUMPAD8;
+    const KEY_DOWN: i32 = VK_NUMPAD2;
+    const KEY_LEFT: i32 = VK_NUMPAD4;
+    const KEY_RIGHT: i32 = VK_NUMPAD6;
+    const KEY_CONFIRM: i32 = VK_NUMPAD0;
+    const KEY_FORWARD: i32 = VK_NUMPAD9;
+    const KEY_BACKWARD: i32 = VK_NUMPAD7;
+    const KEY_CANCEL: i32 = VK_DECIMAL;
+    const KEY_ENTER: i32 = VK_RETURN;
 
     // Common public methods the ui_impl modules export
     pub fn cursor_down() {
         send_key(KEY_DOWN);
     }
-    pub fn cursor_up() {
+    pub fn _cursor_up() {
         send_key(KEY_UP);
     }
-    pub fn cursor_left() {
+    pub fn _cursor_left() {
         send_key(KEY_LEFT);
     }
-    pub fn cursor_right() {
+    pub fn _cursor_right() {
         send_key(KEY_RIGHT);
     }
     pub fn move_backward() {
         send_key(KEY_BACKWARD)
     }
-    pub fn move_forward() {
+    pub fn _move_forward() {
         send_key(KEY_FORWARD);
     }
     pub fn confirm() {
@@ -66,18 +69,18 @@ pub(self) mod ui_impl {
     }
 
     pub fn open_craft_window() {
-        send_key('N');
+        send_key('N' as i32);
     }
 
-    pub fn send_key(c: char) {
-        send_msg(WINDOW, WM_KEYDOWN, c);
-        send_msg(WINDOW, WM_KEYUP, c);
-        sleep(Duration::from_millis(250));
+    pub fn send_key(c: i32) {
+        send_msg(WM_KEYDOWN, c);
+        send_msg(WM_KEYUP, c);
+        sleep(Duration::from_millis(150));
     }
 
     pub fn send_char(c: char) {
-        c::send_msg(window, WM_CHAR, c);
-        sleep(Duration::from_millis(100));
+        send_msg(WM_CHAR, c as i32);
+        sleep(Duration::from_millis(20));
     }
 
     // This callback is called for every window the user32 EnumWindows call finds
@@ -91,7 +94,7 @@ pub(self) mod ui_impl {
         if GetWindowTextA(win_hwnd, title.as_mut_ptr(), title.len() as i32) > 0 {
             let title = CStr::from_ptr(title.as_ptr()).to_str().unwrap();
             if title.contains("FINAL FANTASY XIV") {
-                println!("enum callback called:{}", title);
+                //println!("Found XIV window: {}", win_hwnd as u64);
                 *xiv_hwnd = win_hwnd;
                 return 0;
             }
@@ -101,21 +104,18 @@ pub(self) mod ui_impl {
 
     // Return the handle of the FFXIV window. The first time this is called we make WinAPI
     // calls to find the window and cache it.
-    static mut WINDOW: HWND = null_mut();
-    static INIT: Once = Once::new();
-    fn get_window() -> HWND {
-        unsafe {
-            INIT.call_once(|| {
-                EnumWindows(Some(enum_callback), WINDOW as *mut HWND as LONG_PTR);
-                hwnd
-            });
-        }
-        WINDOW
+
+    unsafe fn get_window(hwnd: &mut HWND) {
+        EnumWindows(Some(enum_callback), hwnd as *mut HWND as LONG_PTR);
     }
 
     // Send a character/key to the XIV window
-    fn send_msg(msg: ui::msg, key: char) {
-        unsafe { PostMessageA(WINDOW, msg_impl as UINT, key_impl as usize, 0) }
+    fn send_msg(msg: u32, key: i32) {
+        unsafe {
+            let mut window: HWND = null_mut();
+            get_window(&mut window);
+            PostMessageA(window, msg as UINT, key as usize, 0);
+        }
     }
 }
 
@@ -147,7 +147,7 @@ pub(self) mod ui_impl {
         println!("<OK> ");
     }
     pub fn cancel() {
-        println!("<CANCEL ");
+        println!("<CANCEL> ");
     }
     pub fn _escape() {
         println!("<ESC> ");

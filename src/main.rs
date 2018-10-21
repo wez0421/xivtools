@@ -1,4 +1,5 @@
 mod craft;
+mod cross;
 mod macros;
 mod task;
 mod ui;
@@ -10,29 +11,38 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
-#[structopt(name = "basic")]
+#[structopt(name = "Talan")]
 struct Opt {
-    /// Item(s) will be crafted as collectable
-    #[structopt(long = "collectable")]
-    collectable: bool,
-    /// Print verbose information during execution
-    #[structopt(short = "v", long = "verbose")]
-    verbose: bool,
-
     /// For recipes which have multiple search results this offset is used to
     /// determine the specific recipe to use. Offsets start at 0 for the first
     /// recipe in search results and increment by one for each recipe down.
-    #[structopt(short = "i", long = "index", default_value = "0")]
-    recipe_index: u32,
+    #[structopt(short = "i", default_value = "0")]
+    recipe_index: u64,
+
     /// Path to the file containing the XIV macros to use
     #[structopt(name = "macro file", parse(from_os_str))]
     macro_file: PathBuf,
+
     /// Name of the item to craft
     #[structopt(name = "item name")]
-    item: String,
+    item_name: String,
+
     /// Number of items to craft
-    #[structopt(default_value = "1")]
-    count: u32,
+    #[structopt(short = "c", default_value = "1")]
+    count: u64,
+
+    /// Increase delay between actions and UI navigation. Recommended with higher
+    /// latency or input lag. [UNIMPLEMENTED]
+    #[structopt(short = "d")]
+    use_delay: bool,
+
+    /// Item(s) will be crafted as collectable
+    #[structopt(long = "collectable")]
+    collectable: bool,
+
+    /// Print verbose information during execution. [UNIMPLEMNETED]
+    #[structopt(short = "v", long = "verbose")]
+    verbose: bool,
 }
 
 fn main() -> Result<(), Error> {
@@ -42,10 +52,10 @@ fn main() -> Result<(), Error> {
     // let them bubble up if they occur.
     let macro_contents = macros::parse_file(opt.macro_file)?;
     let tasks = vec![Task {
-        item_name: "cloud pearl".to_string(),
-        index: 8,
-        count: 1,
-        collectable: true,
+        item_name: opt.item_name,
+        index: opt.recipe_index,
+        count: opt.count,
+        collectable: opt.collectable,
         actions: macro_contents,
         job: Jobs::CUL,
     }];
