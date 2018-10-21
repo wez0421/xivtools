@@ -3,11 +3,11 @@ mod macros;
 mod task;
 mod ui;
 
+use crate::craft::craft_items;
+use crate::task::{Jobs, Task};
 use failure::Error;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use crate::craft::craft_items;
-use crate::task::{ Task, Jobs };
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
@@ -41,7 +41,7 @@ fn main() -> Result<(), Error> {
     // Grab and parse the config file. Errors are all especially fatal so
     // let them bubble up if they occur.
     let macro_contents = macros::parse_file(opt.macro_file)?;
-    let tasks = vec![ Task {
+    let tasks = vec![Task {
         item_name: "cloud pearl".to_string(),
         index: 8,
         count: 1,

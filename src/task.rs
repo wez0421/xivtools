@@ -15,7 +15,7 @@ pub enum Jobs {
 // using a provided macro.
 pub struct Task {
     pub item_name: String,    // name of the item
-    pub job: Jobs,                // job for the item (UNUSED)
+    pub job: Jobs,            // job for the item (UNUSED)
     pub collectable: bool,    // craft collectables
     pub count: u64,           // number of items to craft
     pub index: u64,           // index of the recipe if a search returns multiple (default: 0)

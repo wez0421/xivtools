@@ -1,6 +1,6 @@
+pub use self::ui_impl::*;
 use std::thread::sleep;
 use std::time::Duration;
-pub use self::ui_impl::*;
 
 // Creating these simplifies the wait code for the craft module
 pub fn wait_ms(ms: u64) {
@@ -13,14 +13,14 @@ pub fn wait_secs(s: u64) {
 
 #[cfg(windows)]
 pub(self) mod ui_impl {
-    use std::sync::Once;
     use failure::Error;
     use std::ffi::CStr;
+    use std::sync::Once;
     use winapi::shared::basetsd::LONG_PTR;
     use winapi::shared::minwindef::{BOOL, UINT};
     pub use winapi::shared::windef::HWND;
-    pub use winapi::um::winuser::{EnumWindows, GetWindowTextA, PostMessageA};
     pub use winapi::um::winuser::*;
+    pub use winapi::um::winuser::{EnumWindows, GetWindowTextA, PostMessageA};
 
     // TODO: Configurable keybinds
     const KEY_UP: char = VK_UNUMPAD8;
@@ -112,7 +112,7 @@ pub(self) mod ui_impl {
         }
         WINDOW
     }
-    
+
     // Send a character/key to the XIV window
     fn send_msg(msg: ui::msg, key: char) {
         unsafe { PostMessageA(WINDOW, msg_impl as UINT, key_impl as usize, 0) }
@@ -136,7 +136,7 @@ pub(self) mod ui_impl {
     }
     pub fn move_backward() {
         print!("<- ");
-     }
+    }
     pub fn _move_forward() {
         print!("-> ");
     }
@@ -155,6 +155,5 @@ pub(self) mod ui_impl {
     pub fn send_char(c: char) {
         print!("{}", c);
     }
-    pub fn open_craft_window() { }
+    pub fn open_craft_window() {}
 }
-

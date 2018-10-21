@@ -3,7 +3,7 @@ use crate::ui;
 
 // Runs through the set of tasks
 // TODO: make it actually run more than one task
-pub fn craft_items(tasks: &Vec<Task>) {
+pub fn craft_items(tasks: &[Task]) {
     for task in tasks {
         clear_windows();
         if task.collectable {
