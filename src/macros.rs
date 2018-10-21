@@ -5,22 +5,18 @@ use std::fs;
 use std::path::PathBuf;
 
 #[derive(Debug, PartialEq)]
-pub struct MacroEntry {
-    pub action: String,
+pub struct Action {
+    pub name: String,
     pub wait: u64,
 }
 
-impl fmt::Display for MacroEntry {
+impl fmt::Display for Action {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "MacroEntry ( action: {}, wait: {})",
-            self.action, self.wait
-        )
+        write!(f, "Action ( action: {}, wait: {})", self.name, self.wait)
     }
 }
 
-fn parse_buffer(buffer: &str) -> Vec<MacroEntry> {
+fn parse_buffer(buffer: &str) -> Vec<Action> {
     let mut parsed_macros = vec![];
     buffer
         .trim()
@@ -30,14 +26,14 @@ fn parse_buffer(buffer: &str) -> Vec<MacroEntry> {
     parsed_macros
 }
 
-pub fn parse_file(macros_file: PathBuf) -> Result<Vec<MacroEntry>, Error> {
+pub fn parse_file(macros_file: PathBuf) -> Result<Vec<Action>, Error> {
     let buffer = fs::read_to_string(macros_file)?;
     Ok(parse_buffer(&buffer))
 }
 
 // Extract the action and wait times for a given line in a macros. Returns a
 // String in the event of an error indicating a malformed macros.
-pub fn parse_line(line: &str) -> Result<MacroEntry, String> {
+pub fn parse_line(line: &str) -> Result<Action, String> {
     let re = Regex::new(r#"/ac ["]?([a-zA-Z' ]+[a-zA-Z])["]?(?: <wait.([0-9])>)?"#)
         .expect("error compiling regex");
     let values = re
@@ -52,8 +48,8 @@ pub fn parse_line(line: &str) -> Result<MacroEntry, String> {
         None => 3,
     };
 
-    Ok(MacroEntry {
-        action: action.to_string(),
+    Ok(Action {
+        name: action.to_string(),
         wait,
     })
 }
@@ -66,7 +62,7 @@ mod tests {
     fn macros_single_unqoted_no_wait() {
         // single word, unquoted, with no wait
         let entry = parse_line(r#"/ac Innovation"#).unwrap();
-        assert_eq!(entry.action, "Innovation");
+        assert_eq!(entry.name, "Innovation");
         assert_eq!(entry.wait, 3);
     }
 
@@ -74,7 +70,7 @@ mod tests {
     fn macros_single_qoted_no_wait() {
         // single word, quoted, with no wait
         let entry = parse_line(r#"/ac "Innovation""#).unwrap();
-        assert_eq!(entry.action, "Innovation");
+        assert_eq!(entry.name, "Innovation");
         assert_eq!(entry.wait, 3);
     }
 
@@ -82,7 +78,7 @@ mod tests {
     fn macros_single_unqoted_with_wait() {
         // single word, unquoted, with a wait
         let entry = parse_line(r#"/ac Innovation <wait.2>"#).unwrap();
-        assert_eq!(entry.action, "Innovation");
+        assert_eq!(entry.name, "Innovation");
         assert_eq!(entry.wait, 2);
     }
 
@@ -90,7 +86,7 @@ mod tests {
     fn macros_single_quoted_with_wait() {
         // single word, quoted, with a wait
         let entry = parse_line(r#"/ac "Innovation" <wait.2>"#).unwrap();
-        assert_eq!(entry.action, "Innovation");
+        assert_eq!(entry.name, "Innovation");
         assert_eq!(entry.wait, 2);
     }
 
@@ -98,7 +94,7 @@ mod tests {
     fn macros_double_quoted_no_wait() {
         // two words, quoted, with no wait
         let entry = parse_line(r#"/ac "Byregot's Blessing""#).unwrap();
-        assert_eq!(entry.action, "Byregot's Blessing");
+        assert_eq!(entry.name, "Byregot's Blessing");
         assert_eq!(entry.wait, 3);
     }
 
@@ -106,7 +102,7 @@ mod tests {
     fn macros_double_quoted_with_wait() {
         // two words, quoted, with a wait
         let entry = parse_line(r#"/ac "Byregot's Blessing" <wait.3>"#).unwrap();
-        assert_eq!(entry.action, "Byregot's Blessing");
+        assert_eq!(entry.name, "Byregot's Blessing");
         assert_eq!(entry.wait, 3);
     }
 
@@ -136,30 +132,30 @@ mod tests {
         assert_eq!(validate_test_entries(actual.unwrap()), true);
     }
 
-    fn validate_test_entries(actual: Vec<MacroEntry>) -> bool {
+    fn validate_test_entries(actual: Vec<Action>) -> bool {
         let expected = [
-            MacroEntry {
-                action: "Comfort Zone".to_string(),
+            Action {
+                name: "Comfort Zone".to_string(),
                 wait: 3,
             },
-            MacroEntry {
-                action: "Inner Quiet".to_string(),
+            Action {
+                name: "Inner Quiet".to_string(),
                 wait: 2,
             },
-            MacroEntry {
-                action: "Great Strides".to_string(),
+            Action {
+                name: "Great Strides".to_string(),
                 wait: 2,
             },
-            MacroEntry {
-                action: "Manipulation II".to_string(),
+            Action {
+                name: "Manipulation II".to_string(),
                 wait: 3,
             },
-            MacroEntry {
-                action: "Byregot's Blessing".to_string(),
+            Action {
+                name: "Byregot's Blessing".to_string(),
                 wait: 3,
             },
-            MacroEntry {
-                action: "Careful Synthesis III".to_string(),
+            Action {
+                name: "Careful Synthesis III".to_string(),
                 wait: 3,
             },
         ];

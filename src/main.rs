@@ -1,11 +1,13 @@
-//use std::collections::HashMap;
+mod craft;
 mod macros;
+mod task;
 mod ui;
-use self::ui::HWND;
+
 use failure::Error;
 use std::path::PathBuf;
-use std::ptr::null_mut;
 use structopt::StructOpt;
+use crate::craft::craft_items;
+use crate::task::{ Task, Jobs };
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "basic")]
@@ -16,17 +18,21 @@ struct Opt {
     /// Print verbose information during execution
     #[structopt(short = "v", long = "verbose")]
     verbose: bool,
-    /// Name of the iterm to craft
-    #[structopt(short = "i", long = "item-name", default_value = "")]
+
+    /// For recipes which have multiple search results this offset is used to
+    /// determine the specific recipe to use. Offsets start at 0 for the first
+    /// recipe in search results and increment by one for each recipe down.
+    #[structopt(short = "i", long = "index", default_value = "0")]
+    recipe_index: u32,
+    /// Path to the file containing the XIV macros to use
+    #[structopt(name = "macro file", parse(from_os_str))]
+    macro_file: PathBuf,
+    /// Name of the item to craft
+    #[structopt(name = "item name")]
     item: String,
     /// Number of items to craft
-    #[structopt(short = "c", long = "count", default_value = "1")]
+    #[structopt(default_value = "1")]
     count: u32,
-    #[structopt(short = "o", long = "offset", default_value = "0")]
-    offset: u32,
-    /// Path to the file containing the XIV macros to use
-    #[structopt(name = "macros file", parse(from_os_str))]
-    macro_file: PathBuf,
 }
 
 fn main() -> Result<(), Error> {
@@ -34,27 +40,15 @@ fn main() -> Result<(), Error> {
 
     // Grab and parse the config file. Errors are all especially fatal so
     // let them bubble up if they occur.
-    let macros_contents = macros::parse_file(opt.macro_file)?;
-    println!("Macro to Run:");
-
-    let mut window: ui::HWND = ui::platform_default_hwnd();
-    ui::find_xiv_window(&mut window);
-    ui::reset_ui(&window);
-    ui::reset_action_keys(&window);
-
-    if opt.collectable {
-        ui::toggle_collectable_status(&window);
-    }
-
-    ui::bring_craft_window(&window, &opt.item, opt.offset);
-    for i in 0..opt.count {
-        ui::craft_item(&window, &macros_contents, opt.collectable);
-    }
-
-    ui::reset_ui(&window);
-
-    if opt.collectable {
-        ui::toggle_collectable_status(&window);
-    }
+    let macro_contents = macros::parse_file(opt.macro_file)?;
+    let tasks = vec![ Task {
+        item_name: "cloud pearl".to_string(),
+        index: 8,
+        count: 1,
+        collectable: true,
+        actions: macro_contents,
+        job: Jobs::CUL,
+    }];
+    craft::craft_items(&tasks);
     Ok(())
 }

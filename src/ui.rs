@@ -1,118 +1,86 @@
-pub use self::ui_impl::*;
-use crate::macros;
 use std::thread::sleep;
 use std::time::Duration;
+pub use self::ui_impl::*;
 
-pub fn find_xiv_window(handle: &mut HWND) {
-    platform_find_xiv_window(handle)
+// Creating these simplifies the wait code for the craft module
+pub fn wait_ms(ms: u64) {
+    sleep(Duration::from_millis(ms));
 }
 
-pub fn toggle_collectable_status(handle: &HWND) {
-    send_action(handle, "collectable synthesis", 2);
-}
-
-pub fn send_action(window: &HWND, action: &str, wait: u64) {
-    println!("\t /ac {}", action);
-    send_key(window, UI_ENTER);
-    send_string(window, "/ac \"");
-    send_string(window, action);
-    send_string(window, "\"");
-    sleep(Duration::from_millis(250));
-    send_key(window, UI_ENTER);
-    println!("\twaiting {} seconds", wait);
-    sleep(Duration::from_secs(wait));
-}
-
-pub fn reset_action_keys(window: &HWND) {
-    platform_send_char(window, UI_KEYUP, UI_CONFIRM);
-    platform_send_char(window, UI_KEYUP, UI_ENTER);
-    platform_send_char(window, UI_KEYUP, UI_CRAFT);
-    sleep(Duration::from_millis(250));
-}
-
-pub fn craft_item(window: &HWND, actions: &Vec<macros::MacroEntry>, collectable: bool) {
-    // Sending confirm to handle both first and subsequent crafts
-    send_key(window, UI_CONFIRM);
-    send_key(window, UI_CONFIRM);
-    // Wait longer for the craft UI to come up
-    sleep(Duration::from_secs(2));
-    for entry in actions {
-        send_action(window, &entry.action, entry.wait);
-    }
-    sleep(Duration::from_secs(1));
-    if collectable {
-        send_key(window, UI_CONFIRM);
-        send_key(window, UI_CONFIRM);
-        sleep(Duration::from_secs(1));
-    }
-    sleep(Duration::from_secs(2));
-}
-
-// Clears the UI windows
-pub fn reset_ui(window: &HWND) {
-    for _ in 0..5 {
-        platform_send_char(window, UI_KEYDOWN, UI_ESCAPE);
-        platform_send_char(window, UI_KEYUP, UI_ESCAPE);
-        sleep(Duration::from_millis(50));
-    }
-    sleep(Duration::from_millis(250));
-}
-
-// Brings up the crafting window and selects the item to craft
-pub fn bring_craft_window(window: &HWND, item: &str, offset: u32) {
-    send_key(window, UI_CRAFT);
-    for _ in 0..8 {
-        send_key(window, UI_PREV);
-    }
-    send_key(window, UI_CONFIRM);
-    send_string(window, item);
-    send_key(window, UI_ENTER);
-    // Longer delay while waiting for search results to come up
-    sleep(Duration::from_millis(500));
-    for _ in 0..offset {
-        send_key(window, UI_DOWN);
-        sleep(Duration::from_millis(50));
-    }
-    send_key(window, UI_CONFIRM);
-}
-
-fn send_key(window: &HWND, c: i32) {
-    platform_send_char(window, UI_KEYDOWN, c);
-    platform_send_char(window, UI_KEYUP, c);
-    sleep(Duration::from_millis(250));
-}
-
-fn send_string(window: &HWND, s: &str) {
-    for c in s.chars() {
-        platform_send_char(window, UI_CHAR, c as i32);
-    }
-    sleep(Duration::from_millis(100));
+pub fn wait_secs(s: u64) {
+    sleep(Duration::from_secs(s));
 }
 
 #[cfg(windows)]
 pub(self) mod ui_impl {
+    use std::sync::Once;
     use failure::Error;
     use std::ffi::CStr;
     use winapi::shared::basetsd::LONG_PTR;
     use winapi::shared::minwindef::{BOOL, UINT};
     pub use winapi::shared::windef::HWND;
     pub use winapi::um::winuser::{EnumWindows, GetWindowTextA, PostMessageA};
+    pub use winapi::um::winuser::*;
 
-    pub use winapi::um::winuser::{
-        VK_DOWN, VK_END, VK_ESCAPE, VK_PAUSE, VK_RETURN, VK_SPACE, VK_UP, WM_CHAR, WM_KEYDOWN,
-        WM_KEYUP,
-    };
-    pub const UI_CRAFT: i32 = 0x4e; // N key
-    pub const UI_ENTER: i32 = VK_RETURN;
-    pub const UI_CONFIRM: i32 = VK_PAUSE;
-    pub const UI_PREV: i32 = VK_END;
-    pub const UI_DOWN: i32 = VK_DOWN;
-    pub const UI_UP: i32 = VK_UP;
-    pub const UI_ESCAPE: i32 = VK_ESCAPE;
-    pub const UI_CHAR: u32 = WM_CHAR;
-    pub const UI_KEYDOWN: u32 = WM_KEYDOWN;
-    pub const UI_KEYUP: u32 = WM_KEYUP;
+    // TODO: Configurable keybinds
+    const KEY_UP: char = VK_UNUMPAD8;
+    const KEY_DOWN: char = VK_NUMPAD2;
+    const KEY_LEFT: char = VK_NUMPAD4;
+    const KEY_RIGHT: char = VK_NUMPAD6;
+    const KEY_CONFIRM: char = VK_NUMPAD0;
+    const KEY_FORWARD: char = VK_NUMPAD9;
+    const KEY_BACKWARD: char = VK_NUMPAD7;
+    const KEY_CANCEL: char = VK_DECIMAL;
+    const KEY_ENTER: char = VK_ENTER;
 
+    // Common public methods the ui_impl modules export
+    pub fn cursor_down() {
+        send_key(KEY_DOWN);
+    }
+    pub fn cursor_up() {
+        send_key(KEY_UP);
+    }
+    pub fn cursor_left() {
+        send_key(KEY_LEFT);
+    }
+    pub fn cursor_right() {
+        send_key(KEY_RIGHT);
+    }
+    pub fn move_backward() {
+        send_key(KEY_BACKWARD)
+    }
+    pub fn move_forward() {
+        send_key(KEY_FORWARD);
+    }
+    pub fn enter() {
+        send_key(KEY_ENTER);
+    }
+    pub fn confirm() {
+        send_key(KEY_CONFIRM);
+    }
+    pub fn escape() {
+        send_key(VK_ESCAPE);
+    }
+
+    pub fn open_craft_window() {
+        send_key('N');
+    }
+
+    pub fn send_key(c: char) {
+        send_msg(WINDOW, WM_KEYDOWN, c);
+        send_msg(WINDOW, WM_KEYUP, c);
+        sleep(Duration::from_millis(250));
+    }
+
+    pub fn send_char(c: char) {
+        c::send_msg(window, WM_CHAR, c);
+        sleep(Duration::from_millis(100));
+    }
+
+    // This callback is called for every window the user32 EnumWindows call finds
+    // while walking the window list. Use it to find the XIV window by title.
+    //
+    // To be more foolproof checking process name might be better.
     unsafe extern "system" fn enum_callback(win_hwnd: HWND, arg: LONG_PTR) -> BOOL {
         let mut title: Vec<i8> = vec![0; 256];
         let xiv_hwnd = arg as *mut HWND;
@@ -127,50 +95,60 @@ pub(self) mod ui_impl {
         }
         1
     }
-    pub fn platform_find_xiv_window(handle: &mut HWND) {
+
+    // Return the handle of the FFXIV window. The first time this is called we make WinAPI
+    // calls to find the window and cache it.
+    static mut WINDOW: HWND = null_mut();
+    static INIT: Once = Once::new();
+    fn get_window() -> HWND {
         unsafe {
-            EnumWindows(Some(enum_callback), handle as *mut HWND as LONG_PTR);
+            INIT.call_once(|| {
+                EnumWindows(Some(enum_callback), WINDOW as *mut HWND as LONG_PTR);
+                hwnd
+            });
         }
+        WINDOW
     }
-
-    pub fn platform_send_char(window: &HWND, msg: u32, wparam: i32) -> i32 {
-        unsafe { PostMessageA(*window, msg as UINT, wparam as usize, 0) }
-    }
-
-    pub fn platform_default_hwnd() -> HWND {
-        null_mut()
+    
+    // Send a character/key to the XIV window
+    fn send_msg(msg: ui::msg, key: char) {
+        unsafe { PostMessageA(WINDOW, msg_impl as UINT, key_impl as usize, 0) }
     }
 }
 
 #[cfg(not(windows))]
 pub(self) mod ui_impl {
-    use super::*;
-
-    pub const UI_CRAFT: i32 = 'C' as i32;
-    pub const UI_ENTER: i32 = 'E' as i32;
-    pub const UI_CONFIRM: i32 = 'C' as i32;
-    pub const UI_PREV: i32 = 'P' as i32;
-    pub const UI_DOWN: i32 = 'D' as i32;
-    pub const UI_UP: i32 = 'U' as i32;
-    pub const UI_ESCAPE: i32 = 'X' as i32;
-    pub const UI_CHAR: u32 = 1;
-    pub const UI_KEYDOWN: u32 = 2;
-    pub const UI_KEYUP: u32 = 3;
-    pub struct HWND {}
-
-    pub fn platform_send_char(_: &HWND, msg: u32, wparam: i32) -> i32 {
-        let c: char = wparam as u8 as char;
-        match msg {
-            UI_KEYDOWN => print!(" [{} down]", c),
-            UI_KEYUP => println!(" [{} up]", c),
-            _ => print!("{}", c),
-        }
-        1
+    // Common public methods the ui_impl modules export
+    pub fn cursor_down() {
+        print!("<D> ");
     }
-
-    pub fn platform_find_xiv_window(_: &mut HWND) {}
-
-    pub fn platform_default_hwnd() -> HWND {
-        HWND {}
+    pub fn cursor_up() {
+        print!("<U> ");
     }
+    pub fn cursor_left() {
+        print!("<L> ");
+    }
+    pub fn cursor_right() {
+        print!("<R> ");
+    }
+    pub fn move_backward() {
+        print!("<- ");
+     }
+    pub fn move_forward() {
+        print!("-> ");
+    }
+    pub fn enter() {
+        println!("<ENTER> ");
+    }
+    pub fn confirm() {
+        println!("<OK> ");
+    }
+    pub fn escape() {
+        println!("<ESC> ");
+    }
+    pub fn send_char(c: char) {
+        print!("{}", c);
+    }
+    pub fn open_craft_window() { }
 }
+
