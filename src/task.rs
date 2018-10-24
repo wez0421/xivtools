@@ -1,5 +1,6 @@
 use crate::macros::Action;
 
+#[derive(Debug)]
 pub enum Jobs {
     CUL,
     _ALC,
@@ -13,6 +14,7 @@ pub enum Jobs {
 
 // A task represents crafting a specific item a given number of times
 // using a provided macro.
+#[derive(Debug)]
 pub struct Task {
     pub item_name: String,    // name of the item
     pub job: Jobs,            // job for the item (UNUSED)

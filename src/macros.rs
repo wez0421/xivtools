@@ -1,3 +1,4 @@
+#[macro_use(failure)]
 use failure::Error;
 use regex::Regex;
 use std::fmt;
@@ -33,18 +34,18 @@ pub fn parse_file(macros_file: PathBuf) -> Result<Vec<Action>, Error> {
 
 // Extract the action and wait times for a given line in a macros. Returns a
 // String in the event of an error indicating a malformed macros.
-pub fn parse_line(line: &str) -> Result<Action, String> {
+pub fn parse_line(line: &str) -> Result<Action, Error> {
     let re = Regex::new(r#"/ac ["]?([a-zA-Z:' ]+[a-zA-Z])["]?(?: <wait.([0-9])>)?"#)
         .expect("error compiling regex");
     let values = re
         .captures(line)
-        .ok_or_else(|| format!("Unable to parse line: {}", line))?;
+        .ok_or_else(|| failure::format_err!("Unable to parse line: `{}`", line))?;
     let action = values.get(1).map_or("", |m| m.as_str());
     let wait = match values.get(2) {
         Some(x) => x
             .as_str()
             .parse::<u64>()
-            .map_err(|_| format!("failed to parse as number: {}", x.as_str()))?,
+            .map_err(|_| failure::format_err!("failed to parse as number: {}", x.as_str()))?,
         None => 3,
     };
 

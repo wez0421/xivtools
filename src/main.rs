@@ -1,15 +1,19 @@
 mod craft;
 mod cross;
+mod garland;
 mod macros;
 mod task;
 mod ui;
 
+use pretty_env_logger;
+#[macro_use] use log;
 use crate::craft::craft_items;
 use crate::task::{Jobs, Task};
-use failure::Error;
 use std::path::PathBuf;
 use std::ptr::null_mut;
 use structopt::StructOpt;
+#[macro_use(failure)]
+use failure::{Error};
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "Talan")]
@@ -38,29 +42,31 @@ struct Opt {
     use_delay: bool,
 
     /// Gearset to use for this crafting task.
-    #[structopt(short = "g")]
+    #[structopt(short = "g", default_value="0")]
     gearset: u64,
 
     /// Item(s) will be crafted as collectable
     #[structopt(long = "collectable")]
     collectable: bool,
-
-    /// Print verbose information during execution. [UNIMPLEMNETED]
-    #[structopt(short = "v", long = "verbose")]
-    verbose: bool,
 }
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Error> {
+    pretty_env_logger::init();
+
     let opt = Opt::from_args();
     let mut window: ui::WinHandle = null_mut();
+    // Can this becme map err?
     if !ui::get_window(&mut window) {
-        return Err("Could not find FFXIV window. Is the client running?".to_string());
+        return Err(failure::format_err!("Could not find FFXIV window. Is the client running?"));
     }
 
     // Grab and parse the config file. Errors are all especially fatal so
     // let them bubble up if they occur.
     let macro_contents =
         macros::parse_file(opt.macro_file).map_err(|e| format!("error parsing macro: `{}`", e));
+
+    let item = garland::fetch_item_info(&opt.item_name)?;
+    log::info!("crafting {}", item);
 
     let tasks = vec![Task {
         item_name: opt.item_name,
@@ -71,6 +77,7 @@ fn main() -> Result<(), String> {
         gearset: opt.gearset,
         job: Jobs::CUL,
     }];
+    log::debug!("{:?}", tasks);
     craft_items(window, &tasks);
     Ok(())
 }
