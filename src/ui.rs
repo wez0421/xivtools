@@ -1,4 +1,7 @@
-pub use self::ui_impl::*;
+pub use self::ui_impl::{
+    cancel, confirm, cursor_down, enter, escape, get_window, move_backward, open_craft_window,
+    send_char, WinHandle,
+};
 use std::sync::Mutex;
 use std::thread::sleep;
 use std::time::Duration;
@@ -14,6 +17,7 @@ pub fn wait_secs(s: u64) {
 
 #[cfg(windows)]
 pub(self) mod ui_impl {
+    use failure::Error;
     use std::ffi::CStr;
     use std::ptr::null_mut;
     use std::sync::Once;
@@ -24,6 +28,8 @@ pub(self) mod ui_impl {
     pub use winapi::shared::windef::{HWND, HWND__};
     pub use winapi::um::winuser::*;
     pub use winapi::um::winuser::{EnumWindows, GetWindowTextA, PostMessageA};
+
+    pub type WinHandle = HWND;
 
     // TODO: Configurable keybinds
     const KEY_UP: i32 = VK_NUMPAD8;
@@ -37,49 +43,58 @@ pub(self) mod ui_impl {
     const KEY_ENTER: i32 = VK_RETURN;
 
     // Common public methods the ui_impl modules export
-    pub fn cursor_down() {
-        send_key(KEY_DOWN);
-    }
-    pub fn _cursor_up() {
-        send_key(KEY_UP);
-    }
-    pub fn _cursor_left() {
-        send_key(KEY_LEFT);
-    }
-    pub fn _cursor_right() {
-        send_key(KEY_RIGHT);
-    }
-    pub fn move_backward() {
-        send_key(KEY_BACKWARD)
-    }
-    pub fn _move_forward() {
-        send_key(KEY_FORWARD);
-    }
-    pub fn confirm() {
-        send_key(KEY_CONFIRM);
-    }
-    pub fn cancel() {
-        send_key(KEY_CANCEL);
-    }
-    pub fn enter() {
-        send_key(KEY_ENTER);
-    }
-    pub fn escape() {
-        send_key(VK_ESCAPE);
+    pub fn cursor_down(window: HWND) {
+        send_key(window, KEY_DOWN);
     }
 
-    pub fn open_craft_window() {
-        send_key('N' as i32);
+    pub fn _cursor_up(window: HWND) {
+        send_key(window, KEY_UP);
     }
 
-    pub fn send_key(c: i32) {
-        send_msg(WM_KEYDOWN, c);
-        send_msg(WM_KEYUP, c);
+    pub fn _cursor_left(window: HWND) {
+        send_key(window, KEY_LEFT);
+    }
+
+    pub fn _cursor_right(window: HWND) {
+        send_key(window, KEY_RIGHT);
+    }
+
+    pub fn move_backward(window: HWND) {
+        send_key(window, KEY_BACKWARD)
+    }
+
+    pub fn _move_forward(window: HWND) {
+        send_key(window, KEY_FORWARD);
+    }
+
+    pub fn confirm(window: HWND) {
+        send_key(window, KEY_CONFIRM);
+    }
+
+    pub fn cancel(window: HWND) {
+        send_key(window, KEY_CANCEL);
+    }
+
+    pub fn enter(window: HWND) {
+        send_key(window, KEY_ENTER);
+    }
+
+    pub fn escape(window: HWND) {
+        send_key(window, VK_ESCAPE);
+    }
+
+    pub fn open_craft_window(window: HWND) {
+        send_key(window, 'N' as i32);
+    }
+
+    pub fn send_key(window: HWND, c: i32) {
+        send_msg(window, WM_KEYDOWN, c);
+        send_msg(window, WM_KEYUP, c);
         sleep(Duration::from_millis(150));
     }
 
-    pub fn send_char(c: char) {
-        send_msg(WM_CHAR, c as i32);
+    pub fn send_char(window: HWND, c: char) {
+        send_msg(window, WM_CHAR, c as i32);
         sleep(Duration::from_millis(20));
     }
 
@@ -94,7 +109,7 @@ pub(self) mod ui_impl {
         if GetWindowTextA(win_hwnd, title.as_mut_ptr(), title.len() as i32) > 0 {
             let title = CStr::from_ptr(title.as_ptr()).to_str().unwrap();
             if title.contains("FINAL FANTASY XIV") {
-                //println!("Found XIV window: {}", win_hwnd as u64);
+                println!("Found XIV window: {:?}", win_hwnd);
                 *xiv_hwnd = win_hwnd;
                 return 0;
             }
@@ -102,18 +117,20 @@ pub(self) mod ui_impl {
         1
     }
 
-    // Return the handle of the FFXIV window. The first time this is called we make WinAPI
-    // calls to find the window and cache it.
-
-    unsafe fn get_window(hwnd: &mut HWND) {
-        EnumWindows(Some(enum_callback), hwnd as *mut HWND as LONG_PTR);
+    // Return the handle of the FFXIV window.
+    // TODO: Figure out how to return good errors here.
+    pub fn get_window(hwnd: &mut HWND) -> bool {
+        unsafe {
+            match EnumWindows(Some(enum_callback), hwnd as *mut HWND as LONG_PTR) {
+                0 => true,
+                _ => false,
+            }
+        }
     }
 
     // Send a character/key to the XIV window
-    fn send_msg(msg: u32, key: i32) {
+    fn send_msg(window: HWND, msg: u32, key: i32) {
         unsafe {
-            let mut window: HWND = null_mut();
-            get_window(&mut window);
             PostMessageA(window, msg as UINT, key as usize, 0);
         }
     }
@@ -121,39 +138,56 @@ pub(self) mod ui_impl {
 
 #[cfg(not(windows))]
 pub(self) mod ui_impl {
+    struct WinHandle {}
+
     // Common public methods the ui_impl modules export
     pub fn cursor_down() {
         print!("<D> ");
     }
+
     pub fn _cursor_up() {
         print!("<U> ");
     }
+
     pub fn _cursor_left() {
         print!("<L> ");
     }
+
     pub fn _cursor_right() {
         print!("<R> ");
     }
+
     pub fn move_backward() {
         print!("<- ");
     }
+
     pub fn _move_forward() {
         print!("-> ");
     }
+
     pub fn enter() {
         println!("<ENTER> ");
     }
+
     pub fn confirm() {
         println!("<OK> ");
     }
+
     pub fn cancel() {
         println!("<CANCEL> ");
     }
+
     pub fn _escape() {
         println!("<ESC> ");
     }
+
     pub fn send_char(c: char) {
         print!("{}", c);
     }
+
     pub fn open_craft_window() {}
+
+    pub fn get_window() -> WinHandle {
+        WinHandle {}
+    }
 }

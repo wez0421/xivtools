@@ -8,6 +8,7 @@ use crate::craft::craft_items;
 use crate::task::{Jobs, Task};
 use failure::Error;
 use std::path::PathBuf;
+use std::ptr::null_mut;
 use structopt::StructOpt;
 
 #[derive(StructOpt, Debug)]
@@ -45,20 +46,27 @@ struct Opt {
     verbose: bool,
 }
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<(), String> {
     let opt = Opt::from_args();
+    let mut window: ui::WinHandle = null_mut();
+    if !ui::get_window(&mut window) {
+        return Err("Could not find FFXIV window. Is the client running?".to_string());
+    }
 
     // Grab and parse the config file. Errors are all especially fatal so
     // let them bubble up if they occur.
-    let macro_contents = macros::parse_file(opt.macro_file)?;
+    let macro_contents =
+        macros::parse_file(opt.macro_file).map_err(|e| format!("error parsing macro: `{}`", e));
+
     let tasks = vec![Task {
         item_name: opt.item_name,
         index: opt.recipe_index,
         count: opt.count,
         collectable: opt.collectable,
-        actions: macro_contents,
+        actions: macro_contents.unwrap(),
         job: Jobs::CUL,
     }];
-    craft_items(&tasks);
+    println!("We have the window, I think?");
+    craft_items(window, &tasks);
     Ok(())
 }
