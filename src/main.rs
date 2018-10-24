@@ -37,6 +37,10 @@ struct Opt {
     #[structopt(short = "d")]
     use_delay: bool,
 
+    /// Gearset to use for this crafting task.
+    #[structopt(short = "g")]
+    gearset: u64,
+
     /// Item(s) will be crafted as collectable
     #[structopt(long = "collectable")]
     collectable: bool,
@@ -64,9 +68,9 @@ fn main() -> Result<(), String> {
         count: opt.count,
         collectable: opt.collectable,
         actions: macro_contents.unwrap(),
+        gearset: opt.gearset,
         job: Jobs::CUL,
     }];
-    println!("We have the window, I think?");
     craft_items(window, &tasks);
     Ok(())
 }

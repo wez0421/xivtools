@@ -20,4 +20,5 @@ pub struct Task {
     pub count: u64,           // number of items to craft
     pub index: u64,           // index of the recipe if a search returns multiple (default: 0)
     pub actions: Vec<Action>, // List of actions for the task (ie: xiv macro)
+    pub gearset: u64,
 }

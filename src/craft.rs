@@ -6,6 +6,12 @@ use std::io::{stdout, Write};
 // TODO: make it actually run more than one task
 pub fn craft_items(window: ui::WinHandle, tasks: &[Task]) {
     for task in tasks {
+        // Change to the appropriate job if one is set. XIV
+        // gearsets start at 1, so 0 is a safe empty value.
+        if task.gearset > 0 {
+            change_gearset(window, task.gearset);
+        }
+
         clear_windows(window);
         if task.collectable {
             toggle_collectable(window);
@@ -118,15 +124,23 @@ fn execute_actions(window: ui::WinHandle, actions: &Vec<macros::Action>) {
     println!("");
 }
 
-pub fn send_string(window: ui::WinHandle, s: &str) {
+fn send_string(window: ui::WinHandle, s: &str) {
     for c in s.chars() {
         ui::send_char(window, c);
     }
 }
 
-pub fn send_action(window: ui::WinHandle, action: &str) {
+fn send_action(window: ui::WinHandle, action: &str) {
     ui::enter(window);
     send_string(window, &format!("/ac \"{}\"\n", action));
+    ui::wait_ms(50);
+    ui::enter(window);
+}
+
+fn change_gearset(window: ui::WinHandle, gearset: u64) {
+    println!("changing to gearset {}", gearset);
+    ui::enter(window);
+    send_string(window, &format!("/gearset change {}", gearset));
     ui::wait_ms(50);
     ui::enter(window);
 }
