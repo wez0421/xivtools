@@ -117,7 +117,8 @@ pub(self) mod ui_impl {
         1
     }
 
-    // Return the handle of the FFXIV window.
+    // Return the handle of the FFXIV window. The EnumWindow return is inverted because
+    // we can live in a better world than one where 0 is success.
     // TODO: Figure out how to return good errors here.
     pub fn get_window(hwnd: &mut HWND) -> bool {
         unsafe {
@@ -138,56 +139,56 @@ pub(self) mod ui_impl {
 
 #[cfg(not(windows))]
 pub(self) mod ui_impl {
-    struct WinHandle {}
+    pub type WinHandle = *mut u64;
 
     // Common public methods the ui_impl modules export
-    pub fn cursor_down() {
+    pub fn cursor_down(_: WinHandle) {
         print!("<D> ");
     }
 
-    pub fn _cursor_up() {
+    pub fn _cursor_up(_: WinHandle) {
         print!("<U> ");
     }
 
-    pub fn _cursor_left() {
+    pub fn _cursor_left(_: WinHandle) {
         print!("<L> ");
     }
 
-    pub fn _cursor_right() {
+    pub fn _cursor_right(_: WinHandle) {
         print!("<R> ");
     }
 
-    pub fn move_backward() {
+    pub fn move_backward(_: WinHandle) {
         print!("<- ");
     }
 
-    pub fn _move_forward() {
+    pub fn _move_forward(_: WinHandle) {
         print!("-> ");
     }
 
-    pub fn enter() {
+    pub fn enter(_: WinHandle) {
         println!("<ENTER> ");
     }
 
-    pub fn confirm() {
+    pub fn confirm(_: WinHandle) {
         println!("<OK> ");
     }
 
-    pub fn cancel() {
+    pub fn cancel(_: WinHandle) {
         println!("<CANCEL> ");
     }
 
-    pub fn _escape() {
+    pub fn escape(_: WinHandle) {
         println!("<ESC> ");
     }
 
-    pub fn send_char(c: char) {
+    pub fn send_char(_: WinHandle, c: char) {
         print!("{}", c);
     }
 
-    pub fn open_craft_window() {}
+    pub fn open_craft_window(_: WinHandle) {}
 
-    pub fn get_window() -> WinHandle {
-        WinHandle {}
+    pub fn get_window(_: &mut WinHandle) -> bool {
+        true
     }
 }
