@@ -6,7 +6,8 @@ mod task;
 mod ui;
 
 use pretty_env_logger;
-#[macro_use] use log;
+#[macro_use]
+use log;
 use crate::craft::craft_items;
 use crate::task::{Jobs, Task};
 use std::path::PathBuf;
@@ -36,13 +37,8 @@ struct Opt {
     #[structopt(short = "c", default_value = "1")]
     count: u64,
 
-    /// Increase delay between actions and UI navigation. Recommended with higher
-    /// latency or input lag. [UNIMPLEMENTED]
-    #[structopt(short = "d")]
-    use_delay: bool,
-
     /// Gearset to use for this crafting task.
-    #[structopt(short = "g", default_value="0")]
+    #[structopt(short = "g", default_value = "0")]
     gearset: u64,
 
     /// Item(s) will be crafted as collectable
@@ -57,7 +53,9 @@ fn main() -> Result<(), Error> {
     let mut window: ui::WinHandle = null_mut();
     // Can this becme map err?
     if !ui::get_window(&mut window) {
-        return Err(failure::format_err!("Could not find FFXIV window. Is the client running?"));
+        return Err(failure::format_err!(
+            "Could not find FFXIV window. Is the client running?"
+        ));
     }
 
     // Grab and parse the config file. Errors are all especially fatal so

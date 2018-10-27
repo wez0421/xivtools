@@ -1,7 +1,5 @@
-pub use self::ui_impl::{
-    cancel, confirm, cursor_down, enter, escape, get_window, move_backward, open_craft_window,
-    send_char, WinHandle,
-};
+pub use self::ui_impl::WinHandle;
+
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -14,8 +12,71 @@ pub fn wait_secs(s: u64) {
     sleep(Duration::from_secs(s));
 }
 
+pub fn cursor_down(window: WinHandle) {
+    log::trace!("Down");
+    ui_impl::cursor_down(window);
+}
+
+pub fn cursor_up(window: WinHandle) {
+    log::trace!("Up");
+    ui_impl::cursor_up(window);
+}
+
+pub fn cursor_left(window: WinHandle) {
+    log::trace!("Left");
+    ui_impl::cursor_left(window);
+}
+
+pub fn cursor_right(window: WinHandle) {
+    log::trace!("Right");
+    ui_impl::cursor_right(window);
+}
+
+pub fn move_backward(window: WinHandle) {
+    log::trace!("<-");
+    ui_impl::move_backward(window);
+}
+
+pub fn _move_forward(window: WinHandle) {
+    log::trace!("->");
+    ui_impl::move_forward(window);
+}
+
+pub fn confirm(window: WinHandle) {
+    log::trace!("Confirm");
+    ui_impl::confirm(window);
+}
+
+pub fn cancel(window: WinHandle) {
+    log::trace!("Cancel");
+    ui_impl::cancel(window);
+}
+
+pub fn enter(window: WinHandle) {
+    log::trace!("Enter");
+    ui_impl::enter(window);
+}
+
+pub fn escape(window: WinHandle) {
+    log::trace!("Escape");
+    ui_impl::escape(window);
+}
+
+pub fn open_craft_window(window: WinHandle) {
+    log::trace!("CraftWindow");
+    ui_impl::open_craft_window(window);
+}
+
+pub fn send_char(window: WinHandle, c: char) {
+    ui_impl::send_char(window, c);
+}
+
+pub fn get_window(hwnd: &mut WinHandle) -> bool {
+    ui_impl::get_window(hwnd)
+}
+
 #[cfg(windows)]
-pub(self) mod ui_impl {
+mod ui_impl {
     use failure::Error;
     use std::ffi::CStr;
     use std::ptr::null_mut;
@@ -45,43 +106,33 @@ pub(self) mod ui_impl {
     pub fn cursor_down(window: HWND) {
         send_key(window, KEY_DOWN);
     }
-
-    pub fn _cursor_up(window: HWND) {
+    pub fn cursor_up(window: HWND) {
         send_key(window, KEY_UP);
     }
-
-    pub fn _cursor_left(window: HWND) {
+    pub fn cursor_left(window: HWND) {
         send_key(window, KEY_LEFT);
     }
-
-    pub fn _cursor_right(window: HWND) {
+    pub fn cursor_right(window: HWND) {
         send_key(window, KEY_RIGHT);
     }
-
     pub fn move_backward(window: HWND) {
         send_key(window, KEY_BACKWARD)
     }
-
-    pub fn _move_forward(window: HWND) {
+    pub fn move_forward(window: HWND) {
         send_key(window, KEY_FORWARD);
     }
-
     pub fn confirm(window: HWND) {
         send_key(window, KEY_CONFIRM);
     }
-
     pub fn cancel(window: HWND) {
         send_key(window, KEY_CANCEL);
     }
-
     pub fn enter(window: HWND) {
         send_key(window, KEY_ENTER);
     }
-
     pub fn escape(window: HWND) {
         send_key(window, VK_ESCAPE);
     }
-
     pub fn open_craft_window(window: HWND) {
         send_key(window, 'N' as i32);
     }
@@ -136,57 +187,26 @@ pub(self) mod ui_impl {
     }
 }
 
+#[allow(dead_code)]
 #[cfg(not(windows))]
-pub(self) mod ui_impl {
+mod ui_impl {
     pub type WinHandle = *mut u64;
 
     // Common public methods the ui_impl modules export
-    pub fn cursor_down(_: WinHandle) {
-        print!("<D> ");
-    }
-
-    pub fn _cursor_up(_: WinHandle) {
-        print!("<U> ");
-    }
-
-    pub fn _cursor_left(_: WinHandle) {
-        print!("<L> ");
-    }
-
-    pub fn _cursor_right(_: WinHandle) {
-        print!("<R> ");
-    }
-
-    pub fn move_backward(_: WinHandle) {
-        print!("<- ");
-    }
-
-    pub fn _move_forward(_: WinHandle) {
-        print!("-> ");
-    }
-
-    pub fn enter(_: WinHandle) {
-        println!("<ENTER> ");
-    }
-
-    pub fn confirm(_: WinHandle) {
-        println!("<OK> ");
-    }
-
-    pub fn cancel(_: WinHandle) {
-        println!("<CANCEL> ");
-    }
-
-    pub fn escape(_: WinHandle) {
-        println!("<ESC> ");
-    }
-
+    pub fn cursor_down(_: WinHandle) {}
+    pub fn cursor_up(_: WinHandle) {}
+    pub fn cursor_left(_: WinHandle) {}
+    pub fn cursor_right(_: WinHandle) {}
+    pub fn move_backward(_: WinHandle) {}
+    pub fn move_forward(_: WinHandle) {}
+    pub fn enter(_: WinHandle) {}
+    pub fn confirm(_: WinHandle) {}
+    pub fn cancel(_: WinHandle) {}
+    pub fn escape(_: WinHandle) {}
     pub fn send_char(_: WinHandle, c: char) {
-        print!("{}", c);
+        //print!("{}", c);
     }
-
     pub fn open_craft_window(_: WinHandle) {}
-
     pub fn get_window(_: &mut WinHandle) -> bool {
         true
     }

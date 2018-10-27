@@ -1,7 +1,9 @@
 use crate::macros;
 use crate::task::Task;
 use crate::ui;
+use log;
 use std::io::{stdout, Write};
+
 // Runs through the set of tasks
 // TODO: make it actually run more than one task
 pub fn craft_items(window: ui::WinHandle, tasks: &[Task]) {
@@ -106,7 +108,6 @@ fn execute_task(window: ui::WinHandle, task: &Task) {
 
 fn execute_actions(window: ui::WinHandle, actions: &Vec<macros::Action>) {
     for action in actions {
-        print!(".");
         stdout().flush();
         // Each character has a 20ms wait and the shortest action string
         // we can make (observe or reclaim) is 240 ms, along with 50ms
@@ -121,23 +122,25 @@ fn execute_actions(window: ui::WinHandle, actions: &Vec<macros::Action>) {
             ui::wait_ms(2200);
         };
     }
-    println!("");
 }
 
 fn send_string(window: ui::WinHandle, s: &str) {
+    log::debug!("string(`{}`)", s);
     for c in s.chars() {
         ui::send_char(window, c);
     }
 }
 
 fn send_action(window: ui::WinHandle, action: &str) {
+    log::debug!("action(`{}`)", action);
     ui::enter(window);
-    send_string(window, &format!("/ac \"{}\"\n", action));
+    send_string(window, &format!("/ac \"{}\"", action));
     ui::wait_ms(50);
     ui::enter(window);
 }
 
 fn change_gearset(window: ui::WinHandle, gearset: u64) {
+    log::debug!("gearset({})", gearset);
     println!("changing to gearset {}", gearset);
     ui::enter(window);
     send_string(window, &format!("/gearset change {}", gearset));

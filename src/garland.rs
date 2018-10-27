@@ -1,8 +1,8 @@
-use failure::{Error};
+use failure::Error;
 use reqwest;
 use serde_json;
-use url::form_urlencoded;
 use std::fmt;
+use url::form_urlencoded;
 
 impl fmt::Display for JsonItem {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -11,7 +11,11 @@ impl fmt::Display for JsonItem {
         write!(f, "\tid:   {}\n", self.item.id);
         write!(f, "\tingredients; {{\n");
         for (i, elem) in self.ingredients.iter().enumerate() {
-            write!(f, "\t\t {}x {} (id: {})\n", self.item.craft[0].ingredients[i].amount, elem.name, elem.id);
+            write!(
+                f,
+                "\t\t {}x {} (id: {})\n",
+                self.item.craft[0].ingredients[i].amount, elem.name, elem.id
+            );
         }
         write!(f, "\t}}\n");
         write!(f, "}}\n")
@@ -91,7 +95,10 @@ impl From<JsonItem> for Item {
                 count: json_item.item.craft[0].ingredients[i].amount,
             })
         }
-        Item { name: json_item.item.name,  materials: v }
+        Item {
+            name: json_item.item.name,
+            materials: v,
+        }
     }
 }
 
@@ -133,7 +140,7 @@ fn query_rakshasa_dogi_of_casting() {
     assert_eq!(id, RAKSHASA_DOGI_OF_CASTING_ID);
 }
 
-#[test] 
+#[test]
 fn query_crimson_cider_recipe() {
     const CRIMSON_CIDER_ID: u64 = 22436;
     let item = fetch_item_info("Crimson Cider").unwrap();
