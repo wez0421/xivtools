@@ -103,46 +103,59 @@ mod ui_impl {
     const KEY_ENTER: i32 = VK_RETURN;
 
     // Common public methods the ui_impl modules export
+    #[inline]
     pub fn cursor_down(window: HWND) {
         send_key(window, KEY_DOWN);
     }
+    #[inline]
     pub fn cursor_up(window: HWND) {
         send_key(window, KEY_UP);
     }
+    #[inline]
     pub fn cursor_left(window: HWND) {
         send_key(window, KEY_LEFT);
     }
+    #[inline]
     pub fn cursor_right(window: HWND) {
         send_key(window, KEY_RIGHT);
     }
+    #[inline]
     pub fn move_backward(window: HWND) {
         send_key(window, KEY_BACKWARD)
     }
+    #[inline]
     pub fn move_forward(window: HWND) {
         send_key(window, KEY_FORWARD);
     }
+    #[inline]
     pub fn confirm(window: HWND) {
         send_key(window, KEY_CONFIRM);
     }
+    #[inline]
     pub fn cancel(window: HWND) {
         send_key(window, KEY_CANCEL);
     }
+    #[inline]
     pub fn enter(window: HWND) {
         send_key(window, KEY_ENTER);
     }
+    #[inline]
     pub fn escape(window: HWND) {
         send_key(window, VK_ESCAPE);
     }
+    #[inline]
     pub fn open_craft_window(window: HWND) {
         send_key(window, 'N' as i32);
     }
 
+    #[inline]
     pub fn send_key(window: HWND, c: i32) {
         send_msg(window, WM_KEYDOWN, c);
         send_msg(window, WM_KEYUP, c);
         sleep(Duration::from_millis(150));
     }
 
+    #[inline]
     pub fn send_char(window: HWND, c: char) {
         send_msg(window, WM_CHAR, c as i32);
         sleep(Duration::from_millis(20));
@@ -193,20 +206,31 @@ mod ui_impl {
     pub type WinHandle = *mut u64;
 
     // Common public methods the ui_impl modules export
+    #[inline]
     pub fn cursor_down(_: WinHandle) {}
+    #[inline]
     pub fn cursor_up(_: WinHandle) {}
+    #[inline]
     pub fn cursor_left(_: WinHandle) {}
+    #[inline]
     pub fn cursor_right(_: WinHandle) {}
+    #[inline]
     pub fn move_backward(_: WinHandle) {}
+    #[inline]
     pub fn move_forward(_: WinHandle) {}
+    #[inline]
     pub fn enter(_: WinHandle) {}
+    #[inline]
     pub fn confirm(_: WinHandle) {}
+    #[inline]
     pub fn cancel(_: WinHandle) {}
+    #[inline]
     pub fn escape(_: WinHandle) {}
-    pub fn send_char(_: WinHandle, c: char) {
-        //print!("{}", c);
-    }
+    #[inline]
+    pub fn send_char(_: WinHandle, c: char) {}
+    #[inline]
     pub fn open_craft_window(_: WinHandle) {}
+    #[inline]
     pub fn get_window(_: &mut WinHandle) -> bool {
         true
     }
