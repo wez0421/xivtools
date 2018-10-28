@@ -97,7 +97,7 @@ impl From<JsonItem> for Item {
         let mut v = Vec::new();
         for craft_item in &json_item.item.craft[0].ingredients {
             // Ignore shards, crystals, and clusters
-            if craft_item.id <= 18 {
+            if craft_item.id <= 19 {
                 continue;
             }
 

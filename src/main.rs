@@ -44,6 +44,10 @@ struct Opt {
     /// Item(s) will be crafted as collectable
     #[structopt(long = "collectable")]
     collectable: bool,
+
+    /// Do not craft, but attempt to set everything up to do so
+    #[structopt(short = "n")]
+    dryrun: bool,
 }
 
 fn main() -> Result<(), Error> {
@@ -64,6 +68,7 @@ fn main() -> Result<(), Error> {
         macros::parse_file(opt.macro_file).map_err(|e| format!("error parsing macro: `{}`", e));
 
     let item = garland::fetch_item_info(&opt.item_name)?;
+    log::info!("item information: {}", item);
     let tasks = vec![Task {
         item: item,
         index: opt.recipe_index,
@@ -72,7 +77,6 @@ fn main() -> Result<(), Error> {
         gearset: opt.gearset,
         collectable: opt.collectable,
     }];
-    log::debug!("{:?}", tasks);
     craft_items(window, &tasks);
     Ok(())
 }

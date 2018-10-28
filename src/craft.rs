@@ -28,7 +28,11 @@ pub fn craft_items(window: ui::WinHandle, tasks: &[Task]) {
         // Time to craft the items
         execute_task(window, &task);
 
-        clear_windows(window);
+        // Close out of the cvrafting window and stand up
+        ui::cancel(window);
+        ui::cancel(window);
+        ui::cancel(window);
+        ui::cancel(window);
         if task.collectable {
             toggle_collectable(window);
         }
@@ -49,7 +53,7 @@ fn clear_windows(window: ui::WinHandle) {
 }
 
 fn select_recipe(window: ui::WinHandle, task: &Task) {
-    println!("selecting recipe...");
+    log::info!("selecting recipe...");
     // Loop backward through the UI 9 times to ensure we hit the text box
     // no matter what crafting class we are. The text input boxes are strangely
     // modal so that if we select them at any point they will hold on to focus
@@ -71,8 +75,32 @@ fn select_recipe(window: ui::WinHandle, task: &Task) {
         ui::cursor_down(window);
     }
 
-    // Select the recipe to get to components / craft
+    // Select the recipe to get to components / sythen
     ui::confirm(window);
+}
+
+fn select_materials(window: ui::WinHandle, task: &Task) {
+    log::info!("selecting materials...");
+    ui::cursor_up(window);
+    // TODO implement HQ > NQ
+    ui::cursor_right(window);
+    ui::cursor_right(window);
+
+    // The cursor should be on the quantity field of the bottom item now
+    for material in &task.item.materials {
+        for _ in 0..material.count {
+            ui::confirm(window)
+        }
+        ui::cursor_up(window);
+    }
+    ui::cursor_down(window);
+    ui::cursor_left(window);
+    for material in &task.item.materials {
+        for _ in 0..material.count {
+            ui::confirm(window)
+        }
+        ui::cursor_down(window);
+    }
 }
 
 fn execute_task(window: ui::WinHandle, task: &Task) {
@@ -81,10 +109,16 @@ fn execute_task(window: ui::WinHandle, task: &Task) {
         // Hit the Synthesize button and wait for the window to pop up. We spam
         // it a bit here because the timing can vary a bit depending on framerate
         // and background status after finishing a craft.
-        for _ in 0..4 {
+        //if !task.collectable {
+        //   ui::confirm(window);
+        //}
+        // If we're at the start of a task we will already have the Synthesize button
+        // selected with the pointer.
+        if task_index > 1 && !task.collectable {
             ui::confirm(window);
         }
-
+        select_materials(window, &task);
+        ui::confirm(window);
         // Wait for the craft dialog to pop up
         ui::wait_secs(2);
         // and now execute the actions
@@ -108,7 +142,6 @@ fn execute_task(window: ui::WinHandle, task: &Task) {
 
 fn execute_actions(window: ui::WinHandle, actions: &Vec<macros::Action>) {
     for action in actions {
-        stdout().flush();
         // Each character has a 20ms wait and the shortest action string
         // we can make (observe or reclaim) is 240 ms, along with 50ms
         // from send_action. That reduces how much time is needed to wait
