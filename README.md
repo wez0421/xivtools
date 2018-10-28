@@ -19,13 +19,13 @@ Talan is still in alpha but already has a fairly solid set of features
 - It can parse any variation of FFXIV macros (quoted, unquoted, with wait, without wait)
 - It can change gearsets to allow chaining of commands and crafts.
 - It can craft collectable items.
+- It will use both NQ and HQ materials, prioritizing NQ.
 - It verifies item names via Garlandtools.
 
 ### Roadmap
 Talan is still under active development with the following roadmap in mind:
 - Verifying all abilities in macros are valid.
 - Setting appropriate role actions if a macro requires them.
-- Using NQ or HQ materials based on priority.
 - Determine crafting prerequisites and adding them to the task queue.
 - Allowing default macros to be assigned to difficulty tiers / progress requirements.
 - Building a web interface for using the tool.
