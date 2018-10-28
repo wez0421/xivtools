@@ -3,6 +3,7 @@ use reqwest;
 use serde_json;
 use std::fmt;
 use url::form_urlencoded;
+use log;
 
 impl fmt::Display for JsonItem {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -69,6 +70,7 @@ pub struct Item {
 
 #[derive(Debug)]
 pub struct Material {
+    id: u64,
     name: String,
     count: u64,
 }
@@ -88,13 +90,31 @@ impl fmt::Display for Item {
 // for Talan's purposes.
 impl From<JsonItem> for Item {
     fn from(json_item: JsonItem) -> Self {
+        // The JSON layout keeps terse info like id/amount in the
+        // craft ingredients, but keeps all the information about
+        // each of those in the top level. The data is all extracted
+        // and combined in this conversion method.
         let mut v = Vec::new();
-        for i in 0..json_item.ingredients.len() {
+        for craft_item in &json_item.item.craft[0].ingredients {
+            // Ignore shards, crystals, and clusters
+            if craft_item.id <= 18 {
+                continue;
+            }
+
+            let mut name = String::new();
+            for ingredient in &json_item.ingredients {
+                if craft_item.id == ingredient.id {
+                    name = ingredient.name.clone();
+                }
+            }
+
             v.push(Material {
-                name: json_item.ingredients[i].name.clone(),
-                count: json_item.item.craft[0].ingredients[i].amount,
-            })
+                id: craft_item.id,
+                count: craft_item.amount,
+                name: name.to_string(),
+            });
         }
+
         Item {
             name: json_item.item.name,
             materials: v,
@@ -112,6 +132,7 @@ pub fn query_item_id(item_name: &str) -> Result<Option<u64>, Error> {
         .append_pair("lang", "en")
         .append_pair("exact", "1")
         .finish();
+    log::trace!("fetch({})", encoded_url);
     let body = reqwest::get(&encoded_url)?.text()?;
     let items: Vec<JsonItemSearchResult> = serde_json::from_str(&body)?;
     // We should not get duplicates, but use just the first if we do
@@ -127,7 +148,9 @@ pub fn query_item_id(item_name: &str) -> Result<Option<u64>, Error> {
 pub fn fetch_item_info(name: &str) -> Result<Item, Error> {
     let id = query_item_id(&name)?.unwrap();
     let garland_item_url = String::from("http://www.garlandtools.org/db/doc/item/en/3/");
-    let body = reqwest::get(&format!("{}{}.json", garland_item_url, id))?.text()?;
+    let encoded_url = format!("{}{}.json", garland_item_url, id);
+    log::trace!("fetch({})", encoded_url);
+    let body = reqwest::get(&encoded_url)?.text()?;
     let item: JsonItem = serde_json::from_str(&body)?;
 
     Ok(Item::from(item))
