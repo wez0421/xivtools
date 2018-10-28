@@ -59,7 +59,7 @@ fn select_recipe(window: ui::WinHandle, task: &Task) {
     }
 
     ui::confirm(window);
-    send_string(window, &task.item_name);
+    send_string(window, &task.item.name);
     ui::wait_ms(200);
     ui::enter(window);
 
@@ -77,7 +77,7 @@ fn select_recipe(window: ui::WinHandle, task: &Task) {
 
 fn execute_task(window: ui::WinHandle, task: &Task) {
     for task_index in 1..=task.count {
-        println!("crafting {} {}/{}", task.item_name, task_index, task.count);
+        println!("crafting {} {}/{}", task.item.name, task_index, task.count);
         // Hit the Synthesize button and wait for the window to pop up. We spam
         // it a bit here because the timing can vary a bit depending on framerate
         // and background status after finishing a craft.

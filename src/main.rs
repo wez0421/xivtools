@@ -9,7 +9,7 @@ use pretty_env_logger;
 #[macro_use]
 use log;
 use crate::craft::craft_items;
-use crate::task::{Jobs, Task};
+use crate::task::Task;
 use std::path::PathBuf;
 use std::ptr::null_mut;
 use structopt::StructOpt;
@@ -64,16 +64,13 @@ fn main() -> Result<(), Error> {
         macros::parse_file(opt.macro_file).map_err(|e| format!("error parsing macro: `{}`", e));
 
     let item = garland::fetch_item_info(&opt.item_name)?;
-    log::info!("crafting {}", item);
-
     let tasks = vec![Task {
-        item_name: opt.item_name,
+        item: item,
         index: opt.recipe_index,
         count: opt.count,
-        collectable: opt.collectable,
         actions: macro_contents.unwrap(),
         gearset: opt.gearset,
-        job: Jobs::CUL,
+        collectable: opt.collectable,
     }];
     log::debug!("{:?}", tasks);
     craft_items(window, &tasks);

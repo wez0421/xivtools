@@ -1,9 +1,9 @@
 use failure::Error;
+use log;
 use reqwest;
 use serde_json;
 use std::fmt;
 use url::form_urlencoded;
-use log;
 
 impl fmt::Display for JsonItem {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -64,15 +64,15 @@ struct JsonCraftIngredient {
 
 #[derive(Debug)]
 pub struct Item {
-    name: String,
-    materials: Vec<Material>,
+    pub name: String,
+    pub materials: Vec<Material>,
 }
 
 #[derive(Debug)]
 pub struct Material {
-    id: u64,
-    name: String,
-    count: u64,
+    pub id: u64,
+    pub name: String,
+    pub count: u64,
 }
 
 impl fmt::Display for Item {
