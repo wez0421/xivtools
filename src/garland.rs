@@ -156,25 +156,48 @@ pub fn fetch_item_info(name: &str) -> Result<Item, Error> {
     Ok(Item::from(item))
 }
 
-#[test]
-fn query_rakshasa_dogi_of_casting() {
-    const RAKSHASA_DOGI_OF_CASTING_ID: u64 = 23821;
-    let id = query_item_id(&"Rakshasa Dogi of Casting").unwrap().unwrap();
-    assert_eq!(id, RAKSHASA_DOGI_OF_CASTING_ID);
-}
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn query_rakshasa_dogi_of_casting() {
+        const RAKSHASA_DOGI_OF_CASTING_ID: u64 = 23821;
+        let id = query_item_id(&"Rakshasa Dogi of Casting").unwrap().unwrap();
+        assert_eq!(id, RAKSHASA_DOGI_OF_CASTING_ID);
+    }
 
-#[test]
-fn query_crimson_cider_recipe() {
-    let item = fetch_item_info("Crimson Cider").unwrap();
-    assert_eq!(item.name, "Crimson Cider");
-    assert_eq!(item.materials[0].name, "Crimson Pepper");
-    assert_eq!(item.materials[0].count, 1);
-    assert_eq!(item.materials[1].name, "Jhammel Ginger");
-    assert_eq!(item.materials[1].count, 1);
-    assert_eq!(item.materials[2].name, "Cumin Seeds");
-    assert_eq!(item.materials[2].count, 1);
-    assert_eq!(item.materials[3].name, "Kudzu Root");
-    assert_eq!(item.materials[3].count, 1);
-    assert_eq!(item.materials[4].name, "Loquat");
-    assert_eq!(item.materials[4].count, 3);
+    #[test]
+    fn query_crimson_cider_recipe() {
+        let item = fetch_item_info("Crimson Cider").unwrap();
+        assert_eq!(item.name, "Crimson Cider");
+        assert_eq!(item.materials[0].name, "Crimson Pepper");
+        assert_eq!(item.materials[0].count, 1);
+        assert_eq!(item.materials[1].name, "Jhammel Ginger");
+        assert_eq!(item.materials[1].count, 1);
+        assert_eq!(item.materials[2].name, "Cumin Seeds");
+        assert_eq!(item.materials[2].count, 1);
+        assert_eq!(item.materials[3].name, "Kudzu Root");
+        assert_eq!(item.materials[3].count, 1);
+        assert_eq!(item.materials[4].name, "Loquat");
+        assert_eq!(item.materials[4].count, 3);
+    }
+
+    // This test verifies whether we receive the right information
+    // for items that have multiple recipes associated with them, or
+    // names that happen to be a substring of another item that is also
+    // craftable. The common case for this are Custom Delivery items where
+    // there is often a 'Compoement' item that can be crafted for lower level
+    // folks, as well as the item itself.
+    //
+    // This tests for 'Sui-no-Sato Special' to ensure we don't get confused by
+    // 'Sui-no-Sato Special Component'
+    #[test]
+    fn query_turnin_item() {
+        let item = fetch_item_info("Sui-no-Sato Special").unwrap();
+        println!("{}", item);
+        assert_eq!(item.name, "Sui-no-Sato Special");
+        assert_eq!(item.materials.len(), 1);
+        assert_eq!(item.materials[0].name, "Sui-no-Sato Special Components");
+        assert_eq!(item.materials[0].count, 3);
+    }
 }
