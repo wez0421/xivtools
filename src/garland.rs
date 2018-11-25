@@ -7,19 +7,19 @@ use url::form_urlencoded;
 
 impl fmt::Display for JsonItem {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "item {{\n");
-        write!(f, "\tname: {}\n", self.item.name);
-        write!(f, "\tid:   {}\n", self.item.id);
-        write!(f, "\tingredients; {{\n");
+        writeln!(f, "item {{");
+        writeln!(f, "\tname: {}", self.item.name);
+        write!(f, "\tid:   {}", self.item.id);
+        write!(f, "\tingredients; {{");
         for (i, elem) in self.ingredients.iter().enumerate() {
-            write!(
+            writeln!(
                 f,
-                "\t\t {}x {} (id: {})\n",
+                "\t\t {}x {} (id: {})",
                 self.item.craft[0].ingredients[i].amount, elem.name, elem.id
             );
         }
-        write!(f, "\t}}\n");
-        write!(f, "}}\n")
+        writeln!(f, "\t}}");
+        writeln!(f, "}}")
     }
 }
 
@@ -77,12 +77,12 @@ pub struct Material {
 
 impl fmt::Display for Item {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}\n", self.name);
-        write!(f, "[\n");
+        writeln!(f, "{}", self.name);
+        writeln!(f, "[");
         for m in &self.materials {
-            write!(f, "  {}x {}\n", m.count, m.name);
+            writeln!(f, "  {}x {}", m.count, m.name);
         }
-        write!(f, "]\n")
+        writeln!(f, "]")
     }
 }
 
@@ -137,7 +137,7 @@ pub fn query_item_id(item_name: &str) -> Result<Option<u64>, Error> {
     let items: Vec<JsonItemSearchResult> = serde_json::from_str(&body)?;
     // We should not get duplicates, but use just the first if we do
     println!("items: {:?}", items);
-    if items.len() == 0 {
+    if items.is_empty() {
         return Err(failure::format_err!("item `{}` not found", item_name));
     }
     let id: u64 = items[0].id.parse()?;
@@ -165,7 +165,6 @@ fn query_rakshasa_dogi_of_casting() {
 
 #[test]
 fn query_crimson_cider_recipe() {
-    const CRIMSON_CIDER_ID: u64 = 22436;
     let item = fetch_item_info("Crimson Cider").unwrap();
     assert_eq!(item.name, "Crimson Cider");
     assert_eq!(item.materials[0].name, "Crimson Pepper");

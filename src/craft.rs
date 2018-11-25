@@ -46,10 +46,8 @@ pub fn craft_items(window: ui::WinHandle, tasks: &[Task]) {
         execute_task(window, &task);
 
         // Close out of the cvrafting window and stand up
-        ui::cancel(window);
-        ui::cancel(window);
-        ui::cancel(window);
-        ui::cancel(window);
+        clear_windows(window);
+        ui::wait_secs(2);
         if task.collectable {
             toggle_collectable(window);
         }
@@ -59,7 +57,7 @@ pub fn craft_items(window: ui::WinHandle, tasks: &[Task]) {
 fn clear_windows(window: ui::WinHandle) {
     println!("clearing window...");
     // Hitting escape closes one window each. 10 is excessive, but conservative
-    for _ in 0..10 {
+    for _ in 0..2 {
         ui::escape(window);
     }
 
@@ -119,13 +117,17 @@ fn select_materials(window: ui::WinHandle, task: &Task) {
     ui::cursor_right(window);
 
     // The cursor should be on the quantity field of the bottom item now
-    for material in &task.item.materials {
+    // We move through the ingredients backwards because we start at the bottom of t
+    for (i, material) in task.item.materials.iter().enumerate().rev() {
+        log::trace!("{}x {}", material.count, material.name);
         for _ in 0..material.count {
             ui::confirm(window)
         }
-        ui::cursor_up(window);
+        // Don't move up if we've made it back to the top of the ingredients
+        if i != 0 {
+            ui::cursor_up(window);
+        }
     }
-    ui::cursor_down(window);
     ui::cursor_left(window);
     for material in &task.item.materials {
         for _ in 0..material.count {
@@ -138,41 +140,37 @@ fn select_materials(window: ui::WinHandle, task: &Task) {
 fn execute_task(window: ui::WinHandle, task: &Task) {
     for task_index in 1..=task.count {
         println!("crafting {} {}/{}", task.item.name, task_index, task.count);
-        // Hit the Synthesize button and wait for the window to pop up. We spam
-        // it a bit here because the timing can vary a bit depending on framerate
-        // and background status after finishing a craft.
-        //if !task.collectable {
-        //   ui::confirm(window);
-        //}
         // If we're at the start of a task we will already have the Synthesize button
         // selected with the pointer.
-        if task_index > 1 && !task.collectable {
-            ui::confirm(window);
-        }
         select_materials(window, &task);
         ui::confirm(window);
         // Wait for the craft dialog to pop up
         ui::wait_secs(2);
         // and now execute the actions
         execute_actions(window, &task.actions);
-        // If the item is collectable we'll have an additional dialog
-        if task.collectable {
-            ui::wait_secs(1);
-            ui::confirm(window);
-        }
 
-        // Wait to get back to the crafting window
+        // There are two paths here. If an item is collectable then it will
+        // prompt a dialog to collect the item as collectable. In this case,
+        // selecting confirm with the keyboard will bring the cursor up already.
+        // The end result is that it needs fewer presses of the confirm key
+        // than otherwise.
+        //
+        // At the end of this sequence the cursor should have selected the recipe
+        // again and be on the Synthesize button.
         if task.collectable {
             ui::wait_secs(1);
             ui::confirm(window);
-            ui::wait_secs(4);
+            // Give the UI a moment
+            ui::wait_secs(3);
+            ui::confirm(window)
         } else {
             ui::wait_secs(4);
-        };
+            ui::confirm(window);
+        }
     }
 }
 
-fn execute_actions(window: ui::WinHandle, actions: &Vec<macros::Action>) {
+fn execute_actions(window: ui::WinHandle, actions: &[macros::Action]) {
     for action in actions {
         // Each character has a 20ms wait and the shortest action string
         // we can make (observe or reclaim) is 240 ms, along with 50ms
@@ -190,7 +188,7 @@ fn execute_actions(window: ui::WinHandle, actions: &Vec<macros::Action>) {
 }
 
 fn send_string(window: ui::WinHandle, s: &str) {
-    log::debug!("string(`{}`)", s);
+    log::trace!("string(`{}`)", s);
     for c in s.chars() {
         ui::send_char(window, c);
     }

@@ -227,7 +227,7 @@ mod ui_impl {
     #[inline]
     pub fn escape(_: WinHandle) {}
     #[inline]
-    pub fn send_char(_: WinHandle, c: char) {}
+    pub fn send_char(_: WinHandle, _: char) {}
     #[inline]
     pub fn open_craft_window(_: WinHandle) {}
     #[inline]

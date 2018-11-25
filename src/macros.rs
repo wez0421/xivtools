@@ -1,4 +1,3 @@
-#[macro_use(failure)]
 use failure::Error;
 use regex::Regex;
 use std::fmt;
