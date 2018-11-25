@@ -1,23 +1,40 @@
 use crate::macros;
+use crate::role_actions::RoleActions;
 use crate::task::Task;
 use crate::ui;
 use log;
-use std::io::{stdout, Write};
 
 // Runs through the set of tasks
 // TODO: make it actually run more than one task
 pub fn craft_items(window: ui::WinHandle, tasks: &[Task]) {
+    // TODO: this will be a problem when we run multiple tasks
+    // TODO: Investigate why there's always a longer delay after Careful Synthesis II
+    // TODO: Tea is going to be a problem for non-specialty recipes
+    let mut role_actions = RoleActions::new(window);
+    // Clear role actions before we iterate tasks so the game state
+    // and role action state will be in sync.
+    aaction_clear(window);
+    let mut gearset: u64 = 0;
     for task in tasks {
         // Change to the appropriate job if one is set. XIV
         // gearsets start at 1, so 0 is a safe empty value.
-        if task.gearset > 0 {
+        if task.gearset > 0 && task.gearset != gearset {
+            // If we're changing jobs we need to set role actions up again,
+            // otherwise there's a good chance we can reuse some of the role
+            // actions we already have for the next craft
+            aaction_clear(window);
+            ui::wait_ms(200);
             change_gearset(window, task.gearset);
+            gearset = task.gearset;
         }
 
         clear_windows(window);
         if task.collectable {
             toggle_collectable(window);
         }
+
+        // Check the role action cache and configure any we need for this task
+        configure_role_actions(&mut role_actions, task);
 
         // Bring up the crafting window itself and give it time to appear
         ui::open_craft_window(window);
@@ -50,14 +67,29 @@ fn clear_windows(window: ui::WinHandle) {
     ui::cancel(window);
     ui::cancel(window);
     ui::wait_secs(1);
+    ui::enter(window);
+    ui::enter(window);
 }
 
+fn configure_role_actions(role_actions: &mut RoleActions, task: &Task) {
+    for action in &task.actions {
+        if role_actions.is_role_action(&action.name) {
+            role_actions.add_action(&action.name);
+            ui::wait_ms(250); // In testing, the game takes 1 second per role action
+        }
+    }
+}
+
+// Selects the appropriate recipe then leaves the cursor on the Synthesize
+// button, ready for material selection.
 fn select_recipe(window: ui::WinHandle, task: &Task) {
     log::info!("selecting recipe...");
     // Loop backward through the UI 9 times to ensure we hit the text box
     // no matter what crafting class we are. The text input boxes are strangely
     // modal so that if we select them at any point they will hold on to focus
     // for characters.
+    //
+    // TODO: Link recipe job to this so we don't move more than we need
     for _ in 0..9 {
         ui::move_backward(window);
     }
@@ -183,4 +215,27 @@ fn change_gearset(window: ui::WinHandle, gearset: u64) {
 
 fn toggle_collectable(window: ui::WinHandle) {
     send_action(window, &"collectable synthesis");
+}
+
+pub fn aaction(window: ui::WinHandle, verb: &str, action: &str) {
+    ui::enter(window);
+    if verb == "clear" {
+        send_string(window, "/aaction clear");
+    } else {
+        send_string(window, &format!("/aaction \"{}\" {}", action, verb));
+    }
+    ui::enter(window);
+    //ui::wait_secs(1);
+}
+
+pub fn aaction_clear(window: ui::WinHandle) {
+    aaction(window, "clear", "")
+}
+
+pub fn aaction_add(window: ui::WinHandle, action: &str) {
+    aaction(window, "on", action)
+}
+
+pub fn aaction_remove(window: ui::WinHandle, action: &str) {
+    aaction(window, "off", action)
 }
