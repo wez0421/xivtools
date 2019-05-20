@@ -2,46 +2,41 @@ use crate::craft::{aaction_add, aaction_remove};
 use crate::ui::WinHandle;
 use linked_hash_set::LinkedHashSet;
 use log;
-use std::collections::HashSet;
 
-lazy_static::lazy_static! {
-    static ref ROLE_ACTIONS: HashSet<&'static str> =  {
-        let mut h = HashSet::new();
-        h.insert("brand of earth");
-        h.insert("brand of fire");
-        h.insert("brand of ice");
-        h.insert("brand of lightning");
-        h.insert("brand of water");
-        h.insert("brand of wind");
-        h.insert("byregot's blessing");
-        h.insert("careful synthesis ii");
-        h.insert("careful synthesis");
-        h.insert("comfort zone");
-        h.insert("flawless synthesis");
-        h.insert("hasty touch");
-        h.insert("ingenuity ii");
-        h.insert("ingenuity");
-        h.insert("innovation");
-        h.insert("maker's mark");
-        h.insert("manipulation");
-        h.insert("muscle memory");
-        h.insert("name of earth");
-        h.insert("name of fire");
-        h.insert("name of ice");
-        h.insert("name of lightning");
-        h.insert("name of water");
-        h.insert("name of wind");
-        h.insert("piece by piece");
-        h.insert("rapid synthesis");
-        h.insert("reclaim");
-        h.insert("rumination");
-        h.insert("steady hand ii");
-        h.insert("tricks of the trade");
-        h.insert("waste not ii");
-        h.insert("waste not");
-        h
-    };
-}
+const ROLE_ACTIONS: [&'static str; 32] = [
+    "brand of earth",
+    "brand of fire",
+    "brand of ice",
+    "brand of lightning",
+    "brand of water",
+    "brand of wind",
+    "byregot's blessing",
+    "careful synthesis ii",
+    "careful synthesis",
+    "comfort zone",
+    "flawless synthesis",
+    "hasty touch",
+    "ingenuity ii",
+    "ingenuity",
+    "innovation",
+    "maker's mark",
+    "manipulation",
+    "muscle memory",
+    "name of earth",
+    "name of fire",
+    "name of ice",
+    "name of lightning",
+    "name of water",
+    "name of wind",
+    "piece by piece",
+    "rapid synthesis",
+    "reclaim",
+    "rumination",
+    "steady hand ii",
+    "tricks of the trade",
+    "waste not ii",
+    "waste not",
+];
 
 #[derive(Debug)]
 pub struct RoleActions {
@@ -62,7 +57,7 @@ impl RoleActions {
     }
 
     pub fn is_role_action(&self, action: &str) -> bool {
-        ROLE_ACTIONS.contains(&*action.to_lowercase())
+        ROLE_ACTIONS.contains(&&*action.to_lowercase())
     }
 
     #[allow(dead_code)]
