@@ -1,19 +1,18 @@
 use crate::macros;
 use crate::role_actions::RoleActions;
 use crate::task::Task;
-use crate::ui;
 use log;
+use xiv::ui;
 
 // Runs through the set of tasks
 // TODO: make it actually run more than one task
-pub fn craft_items(window: ui::WinHandle, tasks: &[Task]) {
+pub fn craft_items(handle: &xiv::XivHandle, tasks: &[Task]) {
     // TODO: this will be a problem when we run multiple tasks
     // TODO: Investigate why there's always a longer delay after Careful Synthesis II
     // TODO: Tea is going to be a problem for non-specialty recipes
-    let mut role_actions = RoleActions::new(window);
+    let mut role_actions = RoleActions::new(handle);
     // Clear role actions before we iterate tasks so the game state
     // and role action state will be in sync.
-    aaction_clear(window);
     let mut gearset: u64 = 0;
     for task in tasks {
         // Change to the appropriate job if one is set. XIV
@@ -22,65 +21,46 @@ pub fn craft_items(window: ui::WinHandle, tasks: &[Task]) {
             // If we're changing jobs we need to set role actions up again,
             // otherwise there's a good chance we can reuse some of the role
             // actions we already have for the next craft
-            aaction_clear(window);
-            ui::wait_ms(200);
-            change_gearset(window, task.gearset);
+            change_gearset(handle, task.gearset);
             gearset = task.gearset;
         }
 
-        clear_windows(window);
+        aaction_clear(handle);
+        ui::clear_window(handle);
         if task.collectable {
-            toggle_collectable(window);
+            toggle_collectable(handle);
         }
 
         // Check the role action cache and configure any we need for this task
         configure_role_actions(&mut role_actions, task);
 
         // Bring up the crafting window itself and give it time to appear
-        ui::open_craft_window(window);
-        ui::wait_secs(1);
+        ui::open_craft_window(handle);
 
         // Navigate to the correct recipe based on the index provided
-        select_recipe(window, &task);
+        select_recipe(handle, &task);
         // Time to craft the items
-        execute_task(window, &task);
+        execute_task(handle, &task);
 
         // Close out of the crafting window and stand up
-        clear_windows(window);
-        ui::wait_secs(2);
+        ui::clear_window(handle);
         if task.collectable {
-            toggle_collectable(window);
+            toggle_collectable(handle);
         }
     }
-}
-
-fn clear_windows(window: ui::WinHandle) {
-    println!("clearing window...");
-    // Hitting escape closes one window each. 10 is excessive, but conservative
-    for _ in 0..2 {
-        ui::escape(window);
-    }
-
-    // Cancelling twice will close the System menu if it is open
-    ui::cancel(window);
-    ui::cancel(window);
-    ui::wait_secs(1);
-    ui::enter(window);
-    ui::enter(window);
 }
 
 fn configure_role_actions(role_actions: &mut RoleActions, task: &Task) {
     for action in &task.actions {
         if role_actions.is_role_action(&action.name) {
             role_actions.add_action(&action.name);
-            ui::wait_ms(250); // In testing, the game takes 1 second per role action
         }
     }
 }
 
 // Selects the appropriate recipe then leaves the cursor on the Synthesize
 // button, ready for material selection.
-fn select_recipe(window: ui::WinHandle, task: &Task) {
+fn select_recipe(handle: &xiv::XivHandle, task: &Task) {
     log::info!("selecting recipe...");
     // Loop backward through the UI 9 times to ensure we hit the text box
     // no matter what crafting class we are. The text input boxes are strangely
@@ -89,65 +69,61 @@ fn select_recipe(window: ui::WinHandle, task: &Task) {
     //
     // TODO: Link recipe job to this so we don't move more than we need
     for _ in 0..9 {
-        ui::move_backward(window);
+        ui::cursor_backward(handle);
     }
 
-    ui::confirm(window);
-    send_string(window, &task.item.name);
-    ui::wait_ms(200);
-    ui::enter(window);
-
-    // It takes up to a second for results to populate
-    ui::wait_secs(1);
+    ui::press_confirm(handle);
+    ui::send_string(handle, &task.item.name);
+    ui::press_enter(handle);
 
     // Navigate to the offset we need
     for _ in 0..task.index {
-        ui::cursor_down(window);
+        xiv::cursor_down(handle);
     }
 
     // Select the recipe to get to components / sythen
-    ui::confirm(window);
+    xiv::press_confirm(handle);
 }
 
-fn select_materials(window: ui::WinHandle, task: &Task) {
+fn select_materials(handle: &xiv::XivHandle, task: &Task) {
     log::info!("selecting materials...");
-    ui::cursor_up(window);
+    xiv::cursor_up(handle);
     // TODO implement HQ > NQ
-    ui::cursor_right(window);
-    ui::cursor_right(window);
+    ui::cursor_right(handle);
+    ui::cursor_right(handle);
 
     // The cursor should be on the quantity field of the bottom item now
     // We move through the ingredients backwards because we start at the bottom of t
     for (i, material) in task.item.materials.iter().enumerate().rev() {
         log::trace!("{}x {}", material.count, material.name);
         for _ in 0..material.count {
-            ui::confirm(window)
+            ui::press_confirm(handle)
         }
         // Don't move up if we've made it back to the top of the ingredients
         if i != 0 {
-            ui::cursor_up(window);
+            ui::cursor_up(handle);
         }
     }
-    ui::cursor_left(window);
+    ui::cursor_left(handle);
     for material in &task.item.materials {
         for _ in 0..material.count {
-            ui::confirm(window)
+            ui::press_confirm(handle)
         }
-        ui::cursor_down(window);
+        ui::cursor_down(handle);
     }
 }
 
-fn execute_task(window: ui::WinHandle, task: &Task) {
+fn execute_task(handle: &xiv::XivHandle, task: &Task) {
     for task_index in 1..=task.count {
         println!("crafting {} {}/{}", task.item.name, task_index, task.count);
         // If we're at the start of a task we will already have the Synthesize button
         // selected with the pointer.
-        select_materials(window, &task);
-        ui::confirm(window);
+        select_materials(handle, &task);
+        ui::press_confirm(handle);
         // Wait for the craft dialog to pop up
-        ui::wait_secs(2);
+        // XXX need a wait here
         // and now execute the actions
-        execute_actions(window, &task.actions);
+        execute_actions(handle, &task.actions);
 
         // There are two paths here. If an item is collectable then it will
         // prompt a dialog to collect the item as collectable. In this case,
@@ -158,19 +134,19 @@ fn execute_task(window: ui::WinHandle, task: &Task) {
         // At the end of this sequence the cursor should have selected the recipe
         // again and be on the Synthesize button.
         if task.collectable {
-            ui::wait_secs(1);
-            ui::confirm(window);
+            ui::wait(1.0);
+            ui::press_confirm(handle);
             // Give the UI a moment
-            ui::wait_secs(3);
-            ui::confirm(window)
+            ui::wait(3.0);
+            ui::press_confirm(handle)
         } else {
-            ui::wait_secs(4);
-            ui::confirm(window);
+            ui::wait(4.0);
+            ui::press_confirm(handle);
         }
     }
 }
 
-fn execute_actions(window: ui::WinHandle, actions: &[macros::Action]) {
+fn execute_actions(handle: &xiv::XivHandle, actions: &[macros::Action]) {
     for action in actions {
         // Each character has a 20ms wait and the shortest action string
         // we can make (observe or reclaim) is 240 ms, along with 50ms
@@ -178,62 +154,53 @@ fn execute_actions(window: ui::WinHandle, actions: &[macros::Action]) {
         // here for the GCD to finish. Although macros always wait in 2 or
         // 3 second periods, the actual wait period is 2.0 and 2.5 seconds,
         // so that's adjusted here.
-        send_action(window, &action.name);
+        send_action(handle, &action.name);
         if action.wait == 2 {
-            ui::wait_ms(1700);
+            ui::wait(1.7);
         } else {
-            ui::wait_ms(2200);
+            ui::wait(2.2);
         };
     }
 }
 
-fn send_string(window: ui::WinHandle, s: &str) {
-    log::trace!("string(`{}`)", s);
-    for c in s.chars() {
-        ui::send_char(window, c);
-    }
-}
-
-fn send_action(window: ui::WinHandle, action: &str) {
+fn send_action(handle: &xiv::XivHandle, action: &str) {
     log::debug!("action(`{}`)", action);
-    ui::enter(window);
-    send_string(window, &format!("/ac \"{}\"", action));
-    ui::wait_ms(50);
-    ui::enter(window);
+    ui::press_enter(handle);
+    ui::send_string(handle, &format!("/ac \"{}\"", action));
+    ui::press_enter(handle);
 }
 
-fn change_gearset(window: ui::WinHandle, gearset: u64) {
+fn change_gearset(handle: &xiv::XivHandle, gearset: u64) {
     log::debug!("gearset({})", gearset);
     println!("changing to gearset {}", gearset);
-    ui::enter(window);
-    send_string(window, &format!("/gearset change {}", gearset));
-    ui::wait_ms(50);
-    ui::enter(window);
+    ui::press_enter(handle);
+    ui::send_string(handle, &format!("/gearset change {}", gearset));
+    ui::press_enter(handle);
 }
 
-fn toggle_collectable(window: ui::WinHandle) {
-    send_action(window, &"collectable synthesis");
+fn toggle_collectable(handle: &xiv::XivHandle) {
+    send_action(handle, &"collectable synthesis");
 }
 
-pub fn aaction(window: ui::WinHandle, verb: &str, action: &str) {
-    ui::enter(window);
+pub fn aaction(handle: &xiv::XivHandle, verb: &str, action: &str) {
+    ui::press_enter(handle);
     if verb == "clear" {
-        send_string(window, "/aaction clear");
+        ui::send_string(handle, "/aaction clear");
     } else {
-        send_string(window, &format!("/aaction \"{}\" {}", action, verb));
+        ui::send_string(handle, &format!("/aaction \"{}\" {}", action, verb));
     }
-    ui::enter(window);
-    //ui::wait_secs(1);
+    ui::press_enter(handle);
 }
 
-pub fn aaction_clear(window: ui::WinHandle) {
-    aaction(window, "clear", "")
+pub fn aaction_clear(handle: &xiv::XivHandle) {
+    aaction(handle, "clear", "");
+    ui::wait(1.0)
 }
 
-pub fn aaction_add(window: ui::WinHandle, action: &str) {
-    aaction(window, "on", action)
+pub fn aaction_add(handle: &xiv::XivHandle, action: &str) {
+    aaction(handle, "on", action)
 }
 
-pub fn aaction_remove(window: ui::WinHandle, action: &str) {
-    aaction(window, "off", action)
+pub fn aaction_remove(handle: &xiv::XivHandle, action: &str) {
+    aaction(handle, "off", action)
 }

@@ -1,18 +1,23 @@
-mod craft;
-mod garland;
-mod macros;
-mod role_actions;
-mod task;
-mod ui;
+// mod craft;
+// mod garland;
+// mod macros;
+// mod role_actions;
+// mod task;
+// mod ui;
 
-use crate::craft::craft_items;
-use crate::task::Task;
+// use crate::craft::craft_items;
+// use crate::task::Task;
 use failure::Error;
 use log;
 use pretty_env_logger;
 use std::path::PathBuf;
-use std::ptr::null_mut;
 use structopt::StructOpt;
+use xiv;
+
+mod craft;
+mod macros;
+mod role_actions;
+mod task;
 
 #[derive(StructOpt, Debug)]
 #[structopt(name = "Talan")]
@@ -52,13 +57,8 @@ fn main() -> Result<(), Error> {
     pretty_env_logger::init_timed();
 
     let opt = Opt::from_args();
-    let mut window: ui::WinHandle = null_mut();
     // Can this become map err?
-    if !ui::get_window(&mut window) {
-        return Err(failure::format_err!(
-            "Could not find FFXIV window. Is the client running?"
-        ));
-    }
+    let handle = xiv::init();
 
     // Grab and parse the config file. Errors are all especially fatal so
     // let them bubble up if they occur.
@@ -67,7 +67,7 @@ fn main() -> Result<(), Error> {
 
     let item = garland::fetch_item_info(&opt.item_name)?;
     log::info!("item information: {}", item);
-    let tasks = vec![Task {
+    let tasks = vec![task::Task {
         item: item,
         index: opt.recipe_index,
         count: opt.count,
@@ -75,6 +75,6 @@ fn main() -> Result<(), Error> {
         gearset: opt.gearset,
         collectable: opt.collectable,
     }];
-    craft_items(window, &tasks);
+    craft::craft_items(&handle, &tasks);
     Ok(())
 }

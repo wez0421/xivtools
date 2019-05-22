@@ -1,5 +1,5 @@
-use crate::garland::Item;
 use crate::macros::Action;
+use garland::Item;
 
 // A task represents crafting a specific item a given number of times
 // using a provided macro.

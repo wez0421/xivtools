@@ -1,9 +1,9 @@
 use crate::craft::{aaction_add, aaction_remove};
-use crate::ui::WinHandle;
 use linked_hash_set::LinkedHashSet;
 use log;
+use xiv;
 
-const ROLE_ACTIONS: [&'static str; 32] = [
+const ROLE_ACTIONS: [&str; 32] = [
     "brand of earth",
     "brand of fire",
     "brand of ice",
@@ -39,19 +39,18 @@ const ROLE_ACTIONS: [&'static str; 32] = [
 ];
 
 #[derive(Debug)]
-pub struct RoleActions {
-    // TODO: Figure out how to push this iterator out to the RoleAction struct
-    window: WinHandle,
+pub struct RoleActions<'a> {
+    handle: &'a xiv::XivHandle,
     pub current_actions: LinkedHashSet<String>,
 }
 
 // RoleActions is backed by a HashSet using a doubly linked list that can be used
 // for LRU-like behavior, ensuring that as we add AdditionalActions they will be older
 // actions not referenced in the current macro.
-impl RoleActions {
-    pub fn new(window: WinHandle) -> RoleActions {
+impl<'a> RoleActions<'a> {
+    pub fn new(handle: &xiv::XivHandle) -> RoleActions {
         RoleActions {
-            window,
+            handle,
             current_actions: LinkedHashSet::new(),
         }
     }
@@ -88,10 +87,10 @@ impl RoleActions {
         if self.current_actions.len() > 10 {
             let old_action = self.current_actions.pop_front().unwrap();
             log::debug!("removing role action \"{}\"", old_action);
-            aaction_remove(self.window, &old_action);
+            aaction_remove(&self.handle, &old_action);
         }
         log::debug!("adding role action \"{}\"", action);
-        aaction_add(self.window, action);
+        aaction_add(&self.handle, action);
     }
 }
 
@@ -101,8 +100,8 @@ mod test {
     use std::ptr::null_mut;
     #[test]
     fn test_role_actions() {
-        let window: WinHandle = null_mut();
-        let mut ra = RoleActions::new(window);
+        let window = XivHandle {};
+        let mut ra = RoleActions::new(handle);
         ra.add_action("Tricks of the Trade");
         ra.add_action("Byregot's Blessing");
         ra.add_action("Tricks of the Trade");
