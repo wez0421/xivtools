@@ -65,3 +65,14 @@ unsafe extern "system" fn enum_callback(win_hwnd: HWND, arg: LONG_PTR) -> BOOL {
     }
     1
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_clear_window() {
+        let h = init();
+        ui::clear_window(&h);
+    }
+}
