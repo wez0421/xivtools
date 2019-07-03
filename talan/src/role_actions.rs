@@ -3,14 +3,7 @@ use linked_hash_set::LinkedHashSet;
 use log;
 use xiv;
 
-const ROLE_ACTIONS: [&str; 32] = [
-    "brand of earth",
-    "brand of fire",
-    "brand of ice",
-    "brand of lightning",
-    "brand of water",
-    "brand of wind",
-    "byregot's blessing",
+const ROLE_ACTIONS: [&str; 18] = [
     "careful synthesis ii",
     "careful synthesis",
     "comfort zone",
@@ -22,17 +15,10 @@ const ROLE_ACTIONS: [&str; 32] = [
     "maker's mark",
     "manipulation",
     "muscle memory",
-    "name of earth",
-    "name of fire",
-    "name of ice",
-    "name of lightning",
-    "name of water",
-    "name of wind",
     "piece by piece",
     "rapid synthesis",
     "reclaim",
     "rumination",
-    "steady hand ii",
     "tricks of the trade",
     "waste not ii",
     "waste not",
@@ -96,15 +82,14 @@ impl<'a> RoleActions<'a> {
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use std::ptr::null_mut;
+    use super::RoleActions;
+    use xiv;
+
     #[test]
-    fn test_role_actions() {
-        let window = XivHandle {};
-        let mut ra = RoleActions::new(handle);
-        ra.add_action("Tricks of the Trade");
-        ra.add_action("Byregot's Blessing");
-        ra.add_action("Tricks of the Trade");
+    fn role_actions() {
+        let mut ra = RoleActions::new(&xiv::XivHandle{});
+        ra.add_action("tricks of the trade");
+        ra.add_action("reclaim");
         assert_eq!(2, ra.count());
         ra.add_action("ingenuity ii");
         ra.add_action("ingenuity");
@@ -112,13 +97,15 @@ mod test {
         ra.add_action("maker's mark");
         ra.add_action("manipulation");
         ra.add_action("muscle memory");
-        ra.add_action("name of earth");
-        ra.add_action("name of fire");
-        ra.add_action("name of ice");
-        ra.add_action("name of lightning");
+        ra.add_action("waste not ii");
+        ra.add_action("hasty touch");
         assert_eq!(10, ra.count());
-        assert_eq!(false, ra.contains("Tricks of the Trade"));
-        assert_eq!(false, ra.contains("Byregot's Blessing"));
+        ra.add_action("careful synthesis ii");
+        assert_eq!(false, ra.contains("tricks of the trade"));
+        assert_eq!(10, ra.count());
+        ra.add_action("rumination");
+        assert_eq!(false, ra.contains("reclaim"));
+        assert_eq!(10, ra.count());
         println!("{:?}", ra);
     }
 }
