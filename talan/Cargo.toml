@@ -18,4 +18,6 @@ serde = "1.0.80"
 lazy_static = "1.1.0"
 log = "0.4.5"
 linked_hash_set = "0.1.3"
-bitflags = "1.0.4"
+imgui = { git = "https://github.com/Gekkio/imgui-rs", rev="92ebcce" }
+imgui-glium-renderer = { git = "https://github.com/Gekkio/imgui-rs", rev="92ebcce" }
+imgui-winit-support = { git = "https://github.com/Gekkio/imgui-rs", rev="92ebcce" }
