@@ -42,7 +42,7 @@ pub fn init() -> XivHandle {
     }
 }
 #[cfg(not(windows))]
-pub fn init() -> Rc<XivHandle> {
+pub fn init() -> XivHandle {
     XivHandle {}
 }
 
