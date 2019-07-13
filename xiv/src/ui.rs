@@ -93,6 +93,12 @@ pub fn press_escape(xiv_handle: &super::XivHandle) {
     send_key(xiv_handle, constants::KEY_ESCAPE);
 }
 
+pub fn target_nearest_npc(xiv_handle: &super::XivHandle) {
+    press_enter(xiv_handle);
+    send_string(xiv_handle, "/tnpc");
+    press_enter(xiv_handle);
+}
+
 pub fn send_string(xiv_handle: &super::XivHandle, s: &str) {
     log::trace!("sending string: '{}'\n", s);
     for c in s.chars() {
