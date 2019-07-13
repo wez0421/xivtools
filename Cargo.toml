@@ -1,8 +1,9 @@
 [workspace]
 
 members = [
-    "xiv",
     "garland",
     "talan",
+    "ventures",
+    "xiv",
 ]
 

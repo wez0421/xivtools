@@ -1,0 +1,12 @@
+[package]
+name = "ventures"
+version = "0.1.0"
+authors = ["Christopher Anderson <chris@nullcode.org>"]
+edition = "2018"
+
+[dependencies]
+xiv = { path = "../xiv" }
+clap = "2.33.0"
+env_logger = "0.6.2"
+log = "0.4.6"
+chrono = "0.4.7"
