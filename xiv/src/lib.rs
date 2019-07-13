@@ -13,6 +13,7 @@ use {
 
 // The main handle passed back to library methods. The contents are kept
 // private to avoid leaking any winapi dependencies to callers.
+#[derive(Copy, Clone)]
 pub struct XivHandle {
     #[cfg(windows)]
     hwnd: HWND,

@@ -135,7 +135,7 @@ pub fn clear_window(xiv_handle: &super::XivHandle) {
 
     // Each press of escape clears out one window, or removes the input focus
     for _ in 0..10 {
-        press_escape(xiv_handle);
+        press_cancel(xiv_handle);
     }
 
     // Cancelling twice will close the System menu if it is open, as well as any
@@ -146,13 +146,13 @@ pub fn clear_window(xiv_handle: &super::XivHandle) {
 
 pub fn send_char(xiv_handle: &super::XivHandle, c: char) {
     send_msg(&xiv_handle, constants::MSG_KEY_CHAR, c as i32);
-    wait(0.05);
+    wait(0.1);
 }
 
 fn send_key(xiv_handle: &super::XivHandle, c: i32) {
     send_msg(&xiv_handle, constants::MSG_KEY_DOWN, c);
     send_msg(&xiv_handle, constants::MSG_KEY_UP, c);
-    wait(0.050)
+    wait(0.1);
 }
 
 // Send a character/key to the XIV window
