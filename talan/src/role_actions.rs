@@ -86,6 +86,7 @@ mod test {
     use xiv;
 
     #[test]
+    #[ignore]
     fn role_actions() {
         let mut ra = RoleActions::new(&xiv::XivHandle{});
         ra.add_action("tricks of the trade");
