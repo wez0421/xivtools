@@ -4,6 +4,7 @@
 // mod role_actions;
 // mod task;
 // mod ui;
+mod config;
 
 // use crate::craft::craft_items;
 // use crate::task::Task;
