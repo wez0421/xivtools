@@ -1,8 +1,14 @@
 use failure::Error;
 use regex::Regex;
-use std::fmt;
-use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+use std::{fmt, fs};
+
+#[derive(Debug)]
+pub struct MacroFile {
+    pub name: String,
+    pub path: PathBuf,
+    pub actions: Vec<Action>,
+}
 
 #[derive(Debug, PartialEq)]
 pub struct Action {
@@ -16,19 +22,33 @@ impl fmt::Display for Action {
     }
 }
 
-fn parse_buffer(buffer: &str) -> Vec<Action> {
-    let mut parsed_macros = vec![];
-    buffer
-        .trim()
-        .lines()
-        .for_each(|line| parsed_macros.push(parse_line(line.trim()).unwrap()));
+// Attempts to parse macros in |buffer| and return a list of actions.
+fn parse_buffer(buffer: &str) -> Result<Vec<Action>, Error> {
+    let mut actions = vec![];
+    for line in buffer.trim().lines() {
+        actions.push(parse_line(line.trim())?);
+    }
 
-    parsed_macros
+    Ok(actions)
 }
 
-pub fn parse_file(macros_file: PathBuf) -> Result<Vec<Action>, Error> {
+// Opens |file| and attempts to parse it as a macro list.
+pub fn parse_file(macros_file: &Path) -> Result<Vec<Action>, Error> {
     let buffer = fs::read_to_string(macros_file)?;
-    Ok(parse_buffer(&buffer))
+    parse_buffer(&buffer)
+}
+
+pub fn get_macro_list() -> Result<Vec<MacroFile>, failure::Error> {
+    let mut v: Vec<MacroFile> = Vec::new();
+    for entry in fs::read_dir("macros")? {
+        let entry = entry?;
+        v.push(MacroFile {
+            name: entry.file_name().into_string().unwrap(),
+            path: entry.path(),
+            actions: parse_file(&entry.path())?,
+        });
+    }
+    Ok(v)
 }
 
 // Extract the action and wait times for a given line in a macros. Returns a
@@ -57,6 +77,16 @@ pub fn parse_line(line: &str) -> Result<Action, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::Write;
+    use tempfile::NamedTempFile;
+
+    const TEST_MACRO_BUFFER: &str = r#"
+        /ac "Comfort Zone" <wait.3>
+        /ac "Inner Quiet" <wait.2>
+        /ac "Great Strides" <wait.2>
+        /ac "Manipulation II" <wait.3>
+        /ac "Byregot's Blessing" <wait.3>
+        /ac "Careful Synthesis III" <wait.3>"#;
 
     #[test]
     fn macros_single_unqoted_no_wait() {
@@ -121,23 +151,19 @@ mod tests {
     }
 
     #[test]
-    fn macros_buffer() {
-        let test_macros = r#"
-        /ac "Comfort Zone" <wait.3>
-        /ac "Inner Quiet" <wait.2>
-        /ac "Great Strides" <wait.2>
-        /ac "Manipulation II" <wait.3>
-        /ac "Byregot's Blessing" <wait.3>
-        /ac "Careful Synthesis III" <wait.3>"#;
-
-        let actual = parse_buffer(test_macros);
+    fn macros_buffer() -> Result<(), Error> {
+        let actual = parse_buffer(TEST_MACRO_BUFFER)?;
         assert_eq!(validate_test_entries(actual), true);
+        Ok(())
     }
 
     #[test]
-    fn macros_file() {
-        let actual = parse_file(PathBuf::from("src/test_macro"));
-        assert_eq!(validate_test_entries(actual.unwrap()), true);
+    fn macros_file() -> Result<(), Error> {
+        let mut file = NamedTempFile::new()?;
+        file.write_all(TEST_MACRO_BUFFER.as_bytes()).unwrap();
+        let actual = parse_file(file.path().as_ref())?;
+        assert_eq!(validate_test_entries(actual), true);
+        Ok(())
     }
 
     fn validate_test_entries(actual: Vec<Action>) -> bool {

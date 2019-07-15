@@ -106,6 +106,12 @@ pub fn send_string(xiv_handle: &super::XivHandle, s: &str) {
     }
 }
 
+pub fn send_action(xiv_handle: &super::XivHandle, s: &str, _delay: Option<i64>) {
+    send_string(xiv_handle, s);
+    wait(0.5);
+    press_enter(xiv_handle);
+}
+
 pub fn open_craft_window(xiv_handle: &super::XivHandle) {
     // TODO: This should be configurable
     send_key(xiv_handle, 'N' as i32);

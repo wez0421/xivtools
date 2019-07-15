@@ -1,14 +1,20 @@
-use crate::macros::Action;
-use garland::Item;
+use xivapi;
+
+#[derive(Copy, Clone, Debug)]
+pub struct MaterialCount {
+    pub nq: i32,
+    pub hq: i32,
+}
 
 // A task represents crafting a specific item a given number of times
-// using a provided macro.
+// using a provided recipe and macro. mat_quality is a specific field
+// separate from Recipe because the Recipe type is from an external
+// crate.
 #[derive(Debug)]
 pub struct Task {
-    pub item: Item,           // Item structure for name, id, and materials
-    pub count: u64,           // number of items to craft
-    pub index: u64,           // index of the recipe if a search returns multiple (default: 0)
-    pub actions: Vec<Action>, // List of actions for the task (ie: xiv macro)
-    pub gearset: u64,         // Gearset to switch to for crafting
-    pub collectable: bool,    // craft collectables
+    pub quantity: i32,        // number of items to craft
+    pub is_collectable: bool, // craft collectables
+    pub recipe: xivapi::Recipe,
+    pub mat_quality: Vec<MaterialCount>,
+    pub macro_id: i32,
 }

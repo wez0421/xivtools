@@ -6,7 +6,7 @@ use xiv::ui;
 
 // Runs through the set of tasks
 // TODO: make it actually run more than one task
-pub fn craft_items(handle: &xiv::XivHandle, tasks: &[Task]) {
+pub fn craft_items(handle: &xiv::XivHandle, cfg: &Config,  macros: &[Macros], tasks: &[Task]) {
     // TODO: this will be a problem when we run multiple tasks
     // TODO: Investigate why there's always a longer delay after Careful Synthesis II
     // TODO: Tea is going to be a problem for non-specialty recipes
@@ -185,11 +185,10 @@ fn toggle_collectable(handle: &xiv::XivHandle) {
 pub fn aaction(handle: &xiv::XivHandle, verb: &str, action: &str) {
     ui::press_enter(handle);
     if verb == "clear" {
-        ui::send_string(handle, "/aaction clear");
+        ui::send_action(handle, "/aaction clear", None);
     } else {
-        ui::send_string(handle, &format!("/aaction \"{}\" {}", action, verb));
+        ui::send_action(handle, &format!("/aaction \"{}\" {}", action, verb), None);
     }
-    ui::press_enter(handle);
 }
 
 pub fn aaction_clear(handle: &xiv::XivHandle) {

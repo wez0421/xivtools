@@ -1,7 +1,7 @@
 [workspace]
 
 members = [
-    "garland",
+    "xivapi",
     "talan",
     "ventures",
     "xiv",

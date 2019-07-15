@@ -1,7 +1,8 @@
 pub mod ui;
-pub use ui::*;
 
+use log;
 use std::fmt;
+
 #[cfg(windows)]
 use {
     std::ffi::CStr,
@@ -10,6 +11,8 @@ use {
     winapi::shared::windef::HWND,
     winapi::um::winuser::{EnumWindows, GetWindowTextA},
 };
+
+pub const JOBS: [&str; 8] = ["CRP", "BSM", "ARM", "GSM", "LTW", "WVR", "ALC", "CUL"];
 
 // The main handle passed back to library methods. The contents are kept
 // private to avoid leaking any winapi dependencies to callers.
@@ -38,12 +41,14 @@ pub fn init() -> XivHandle {
         // method.
         match EnumWindows(Some(enum_callback), &mut arg as *mut HWND as LONG_PTR) {
             0 => XivHandle { hwnd: arg as HWND },
-            _ => panic!("Unable to find XIV window! Is Final Fantasy XIV running?:win_hwnd"),
+            _ => panic!("Unable to find XIV window! Is Final Fantasy XIV running?"),
         }
     }
 }
+
 #[cfg(not(windows))]
 pub fn init() -> XivHandle {
+    log::info!("Stub XIV lib in use.");
     XivHandle {}
 }
 
@@ -58,22 +63,12 @@ unsafe extern "system" fn enum_callback(win_hwnd: HWND, arg: LONG_PTR) -> BOOL {
 
     if GetWindowTextA(win_hwnd, title.as_mut_ptr(), title.len() as i32) > 0 {
         let title = CStr::from_ptr(title.as_ptr()).to_string_lossy();
-        println!("found {}: {:?}, arg {:?}", title, win_hwnd, xiv_hwnd);
+        log::trace!("found {}: {:?}, arg {:?}", title, win_hwnd, xiv_hwnd);
         if title.contains("FINAL FANTASY XIV") {
+            log::info!("Found FFXIV.\n");
             *xiv_hwnd = win_hwnd;
             return 0;
         }
     }
     1
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_clear_window() {
-        let h = init();
-        ui::clear_window(&h);
-    }
 }

@@ -86,19 +86,19 @@ fn read_config_from_file(path: &Path) -> Result<Config, Error> {
 
 fn write_config_internal(cfg: &Config, path: &Path) -> Result<(), Error> {
     let mut f = File::create(path)?;
-    f.write_all(serde_json::to_string(&cfg)?.as_bytes())?;
+    f.write_all(serde_json::to_string(&cfg)?.as_bytes())
+        .unwrap();
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs::remove_file;
     use tempfile::NamedTempFile;
 
     #[test]
     fn test_write_and_read() -> Result<(), Error> {
-        let mut file = NamedTempFile::new()?;
+        let file = NamedTempFile::new()?;
         let mut c1 = Config::default();
         c1.gear.crp = 1;
         c1.gear.bsm = 2;
@@ -116,7 +116,7 @@ mod tests {
 
     #[test]
     fn test_default_config() -> Result<(), Error> {
-        let mut file = NamedTempFile::new()?;
+        let file = NamedTempFile::new()?;
         assert_eq!(read_config_internal(file.path()), Config::default());
         Ok(())
     }
