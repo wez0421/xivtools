@@ -70,8 +70,8 @@ fn main() {
             open_retainer_menu(&h);
             sleep(delay_m * 60);
             delay_m = 0;
-            now = Local::now();
         }
+
         // Always re-open the menu to ensure the state is consistent. This is
         // important because if the user does anything in the intervening time,
         // even simple things like tabbing to the game and out again, it may
@@ -81,6 +81,7 @@ fn main() {
             reassign_venture(&h, *r);
         }
 
+        now = Local::now();
         let next = now + chrono::Duration::minutes(60);
         println!(
             "[{:02}:{:02}:{:02}] Run finished. Next is at {:02}:{:02}:{:02}",
