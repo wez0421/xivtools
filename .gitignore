@@ -1,4 +1,10 @@
+*_BACKUP_*
+*_BASE_*
+*_LOCAL_*
+*_REMOTE_*
 *~
-Cargo.lock
-/target
 /.vscode
+/target
+Cargo.lock
+config.js
+*.orig
