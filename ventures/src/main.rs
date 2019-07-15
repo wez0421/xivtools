@@ -92,7 +92,7 @@ fn main() {
             next.minute(),
             next.second(),
         );
-        sleep(60 * 61);
+        sleep(60 * 60); // 60 minutes
     }
 }
 
