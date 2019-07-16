@@ -1,5 +1,6 @@
 use chrono::{Local, Timelike};
 use clap::{value_t, App, Arg};
+use failure::Error;
 use std::thread;
 use xiv;
 use xiv::ui;
@@ -9,7 +10,7 @@ fn sleep(s: u64) {
 }
 
 const VERSION: &str = "1.0";
-fn main() {
+fn main() -> Result<(), Error>  {
     let matches = App::new("Ventures")
         .version(VERSION)
         .arg(
@@ -53,7 +54,7 @@ fn main() {
     if matches.occurrences_of("delay") > 0 {
         delay_m = value_t!(matches.value_of("delay"), u64).unwrap_or_else(|e| e.exit());
     }
-    let h = xiv::init();
+    let h = xiv::init()?;
 
     loop {
         let mut now = Local::now();

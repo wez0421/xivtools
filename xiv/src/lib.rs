@@ -1,5 +1,6 @@
 pub mod ui;
 
+use failure::Error;
 use log;
 use std::fmt;
 
@@ -34,22 +35,22 @@ impl fmt::Debug for XivHandle {
 }
 
 #[cfg(windows)]
-pub fn init() -> XivHandle {
+pub fn init() -> Result<XivHandle, Error> {
     let mut arg = std::ptr::null_mut();
     unsafe {
         // TODO: Figure out Rust error handling rather than just panicking inside a lib
         // method.
         match EnumWindows(Some(enum_callback), &mut arg as *mut HWND as LONG_PTR) {
-            0 => XivHandle { hwnd: arg as HWND },
-            _ => panic!("Unable to find XIV window! Is Final Fantasy XIV running?"),
+            0 => Ok(XivHandle { hwnd: arg as HWND }),
+            _ => Error::from("Unable to find XIV window! Is Final Fantasy XIV running?"),
         }
     }
 }
 
 #[cfg(not(windows))]
-pub fn init() -> XivHandle {
+pub fn init() -> Result<XivHandle, Error> {
     log::info!("Stub XIV lib in use.");
-    XivHandle {}
+    Ok(XivHandle {})
 }
 
 // This callback is called for every window the user32 EnumWindows call finds
