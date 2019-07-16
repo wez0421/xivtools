@@ -21,3 +21,4 @@ tempfile = "3.1.0"
 walkdir = "2.2.7"
 xiv = { path = "../xiv" }
 xivapi = { path = "../xivapi" }
+clap = "2.33.0"
