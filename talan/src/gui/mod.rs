@@ -258,7 +258,7 @@ fn draw_ui<'a>(ui: &imgui::Ui<'a>, cfg: &mut config::Config, mut state: &mut UiS
     true
 }
 
-pub fn start(mut cfg: &mut config::Config, macros: &Vec<MacroFile>) -> Result<(), Error> {
+pub fn start(mut cfg: &mut config::Config, macros: &[MacroFile]) -> Result<(), Error> {
     use glium::glutin;
     use glium::{Display, Surface};
     use imgui_glium_renderer::Renderer;
