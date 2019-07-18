@@ -214,37 +214,37 @@ fn draw_ui<'a>(ui: &imgui::Ui<'a>, cfg: &mut config::Config, mut state: &mut UiS
                         .input_int(im_str!("Blacksmith"), &mut cfg.gear.bsm)
                         .build()
                     {
-                        cfg.gear.crp = max(cfg.gear.bsm, 0);
+                        cfg.gear.bsm = max(cfg.gear.bsm, 0);
                     }
                     if ui.input_int(im_str!("Armorer"), &mut cfg.gear.arm).build() {
-                        cfg.gear.crp = max(cfg.gear.arm, 0);
+                        cfg.gear.arm = max(cfg.gear.arm, 0);
                     }
                     if ui
                         .input_int(im_str!("Goldsmith"), &mut cfg.gear.gsm)
                         .build()
                     {
-                        cfg.gear.crp = max(cfg.gear.gsm, 0);
+                        cfg.gear.gsm = max(cfg.gear.gsm, 0);
                     }
                     if ui
                         .input_int(im_str!("Leatherworker"), &mut cfg.gear.ltw)
                         .build()
                     {
-                        cfg.gear.crp = max(cfg.gear.ltw, 0);
+                        cfg.gear.ltw = max(cfg.gear.ltw, 0);
                     }
                     if ui.input_int(im_str!("Weaver"), &mut cfg.gear.wvr).build() {
-                        cfg.gear.crp = max(cfg.gear.wvr, 0);
+                        cfg.gear.wvr = max(cfg.gear.wvr, 0);
                     }
                     if ui
                         .input_int(im_str!("Alchemist"), &mut cfg.gear.alc)
                         .build()
                     {
-                        cfg.gear.crp = max(cfg.gear.alc, 0);
+                        cfg.gear.alc = max(cfg.gear.alc, 0);
                     }
                     if ui
                         .input_int(im_str!("Culinarian"), &mut cfg.gear.cul)
                         .build()
                     {
-                        cfg.gear.crp = max(cfg.gear.cul, 0);
+                        cfg.gear.cul = max(cfg.gear.cul, 0);
                     }
                 });
             }
