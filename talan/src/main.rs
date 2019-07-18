@@ -3,30 +3,29 @@ mod gui;
 mod macros;
 mod task;
 
-use clap::{App, Arg};
 use env_logger;
 use failure::Error;
-
-const VERSION: &str = "1.0";
+use task::Task;
 
 fn main() -> Result<(), Error> {
     env_logger::init();
 
-    let matches = App::new("Ventures")
-        .version(VERSION)
-        .arg(
-            Arg::with_name("gui")
-                .short("g")
-                .help("Run with a graphical interface."),
-        )
-        .get_matches();
-
     let _handle = xiv::init()?;
+    // Read here, but can be updated by a UI impl.
     let mut cfg = config::read_config();
+    // Any UI implementation will populate this vec.
+    let mut tasks: Vec<Task> = Vec::new();
+    // These are only read at startup.
     let macros = macros::get_macro_list()?;
-
-    if matches.occurrences_of("gui") > 0 {
-        gui::start(&mut cfg, &macros)?;
+    log::info!("Scanning macros:");
+    for m in &macros {
+        log::info!("\t{}", m.name);
     }
+
+    match gui::start(&mut cfg, &mut tasks, &macros)? {
+        true => println!("tasks: {:#?}", tasks),
+        false => println!("exiting..."),
+    }
+
     Ok(())
 }

@@ -15,6 +15,7 @@ pub struct Task {
     pub quantity: i32,        // number of items to craft
     pub is_collectable: bool, // craft collectables
     pub recipe: xivapi::Recipe,
+    pub ignore_mat_quality: bool,
     pub mat_quality: Vec<MaterialCount>,
     pub macro_id: i32,
 }

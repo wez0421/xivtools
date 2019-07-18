@@ -18,6 +18,7 @@ struct UiState {
     job_labels: Vec<ImString>,
     tasks: Vec<Task>,
     tasks_to_remove: Vec<usize>,
+    return_tasks: bool,
 }
 
 impl Default for UiState {
@@ -30,6 +31,7 @@ impl Default for UiState {
             job_labels: xiv::JOBS.iter().map(|&j| ImString::new(j)).collect(),
             tasks: Vec::new(),
             tasks_to_remove: Vec::new(),
+            return_tasks: false,
         }
     }
 }
@@ -43,20 +45,25 @@ const PADDING_H: f32 = 10.0;
 const TOTAL_WIDTH: f32 = TASK_W + CONFIG_W + (PADDING_W * 3.0);
 const TOTAL_HEIGHT: f32 = TASK_H + (PADDING_H * 2.0);
 
-fn check_state_values(state: &mut UiState) {
+fn check_state_values(state: &mut UiState, tasks: &mut Vec<Task>) {
     // Due to borrow semantics, deferring the task remove to outside the iterator
     // borrow is necessary.
     if !state.tasks_to_remove.is_empty() {
         for task_id in &state.tasks_to_remove {
-            state.tasks.remove(*task_id);
+            tasks.remove(*task_id);
         }
         state.tasks_to_remove.clear();
     }
 }
 
-fn draw_ui<'a>(ui: &imgui::Ui<'a>, cfg: &mut config::Config, mut state: &mut UiState) -> bool {
+fn draw_ui<'a>(
+    ui: &imgui::Ui<'a>,
+    cfg: &mut config::Config,
+    tasks: &mut Vec<Task>,
+    mut state: &mut UiState,
+) -> bool {
     // Ensure our state is in a good ... state.
-    check_state_values(&mut state);
+    check_state_values(&mut state, tasks);
     if state.add_clicked {
         // Search for the recipe via XIVAPI. If we find it, create a backing task for it and
         // add it to our tasks.
@@ -67,6 +74,7 @@ fn draw_ui<'a>(ui: &imgui::Ui<'a>, cfg: &mut config::Config, mut state: &mut UiS
                     let task = Task {
                         quantity: 1,
                         is_collectable: false,
+                        ignore_mat_quality: true,
                         // Initialize the material qualities to be NQ for everything
                         mat_quality: recipe
                             .mats
@@ -76,7 +84,7 @@ fn draw_ui<'a>(ui: &imgui::Ui<'a>, cfg: &mut config::Config, mut state: &mut UiS
                         recipe,
                         macro_id: 0,
                     };
-                    state.tasks.push(task);
+                    tasks.push(task);
                 }
             }
             Err(e) => println!("Error fetching recipe: {}", e.to_string()),
@@ -123,7 +131,7 @@ fn draw_ui<'a>(ui: &imgui::Ui<'a>, cfg: &mut config::Config, mut state: &mut UiS
 
             // Both Tasks and their materials are enumerated so we can generate unique
             // UI ids for widgets and prevent any sort of UI clash.
-            for (task_id, task) in &mut state.tasks.iter_mut().enumerate() {
+            for (task_id, task) in &mut tasks.iter_mut().enumerate() {
                 ui.push_id(task_id as i32);
                 // header should be closeable
                 let header_name = ImString::new(format!(
@@ -141,6 +149,10 @@ fn draw_ui<'a>(ui: &imgui::Ui<'a>, cfg: &mut config::Config, mut state: &mut UiS
                     .default_open(true)
                     .build()
                 {
+                    ui.checkbox(
+                        im_str!("Use materials of any quality"),
+                        &mut task.ignore_mat_quality,
+                    );
                     for (i, (mat, qual)) in task
                         .recipe
                         .mats
@@ -149,23 +161,33 @@ fn draw_ui<'a>(ui: &imgui::Ui<'a>, cfg: &mut config::Config, mut state: &mut UiS
                         .enumerate()
                     {
                         ui.push_id(i as i32);
-                        let mut nq_imstr = ImString::new(qual.nq.to_string());
-                        ui.text(&ImString::new(mat.name.clone()));
-                        ui.with_item_width(25.0, || {
-                            ui.input_text(im_str!("NQ"), &mut nq_imstr)
-                                .flags(ImGuiInputTextFlags::ReadOnly)
-                                .build();
-                        });
-                        ui.same_line(0.0);
-                        ui.with_item_width(75.0, || {
-                            if ui.input_int(im_str!("HQ"), &mut qual.hq).build() {
-                                // Adjust NQ as necessary, and bound by [0, COUNT]
-                                qual.hq = min(max(0, qual.hq), mat.count);
-                                qual.nq = mat.count - qual.hq;
-                            }
-                        });
+                        if task.ignore_mat_quality {
+                            // Create a quick label string for the material
+                            ui.text(format!("{}x {}", mat.count, mat.name));
+                        } else {
+                            // Otherwise we need to convert some numerical values to strings,
+                            // then feed them into the widgets. This seems like it should
+                            // thrash like crazy, but thankfully it's 2019 and processors
+                            // are fast?
+                            let mut nq_imstr = ImString::new(qual.nq.to_string());
+                            ui.text(&ImString::new(mat.name.clone()));
+                            ui.with_item_width(25.0, || {
+                                ui.input_text(im_str!("NQ"), &mut nq_imstr)
+                                    .flags(ImGuiInputTextFlags::ReadOnly)
+                                    .build();
+                            });
+                            ui.same_line(0.0);
+                            ui.with_item_width(75.0, || {
+                                if ui.input_int(im_str!("HQ"), &mut qual.hq).build() {
+                                    // Adjust NQ as necessary, and bound by [0, COUNT]
+                                    qual.hq = min(max(0, qual.hq), mat.count);
+                                    qual.nq = mat.count - qual.hq;
+                                }
+                            });
+                        }
                         ui.pop_id();
                     }
+
                     ui.with_item_width(75.0, || {
                         ui.input_int(im_str!("Count"), &mut task.quantity).build();
                         ui.same_line(0.0);
@@ -186,8 +208,9 @@ fn draw_ui<'a>(ui: &imgui::Ui<'a>, cfg: &mut config::Config, mut state: &mut UiS
             }
 
             ui.separator();
-            if !state.tasks.is_empty() && button(ui, "Craft Tasks") {
-                println!("craft clicked");
+            // Only show the craft button if we have tasks added
+            if !tasks.is_empty() && button(ui, "Craft Tasks") {
+                state.return_tasks = true;
             }
         });
     // Right side window
@@ -255,10 +278,16 @@ fn draw_ui<'a>(ui: &imgui::Ui<'a>, cfg: &mut config::Config, mut state: &mut UiS
                 };
             }
         });
-    true
+
+    // Return if we're supposed to
+    state.return_tasks
 }
 
-pub fn start(mut cfg: &mut config::Config, macros: &[MacroFile]) -> Result<(), Error> {
+pub fn start(
+    mut cfg: &mut config::Config,
+    tasks: &mut Vec<Task>,
+    macros: &[MacroFile],
+) -> Result<bool, Error> {
     use glium::glutin;
     use glium::{Display, Surface};
     use imgui_glium_renderer::Renderer;
@@ -319,7 +348,9 @@ pub fn start(mut cfg: &mut config::Config, macros: &[MacroFile]) -> Result<(), E
         let frame_size = imgui_winit_support::get_frame_size(&window, hidpi_factor).unwrap();
 
         let ui = imgui.frame(frame_size, delta_s);
-        draw_ui(&ui, &mut cfg, &mut ui_state);
+        if draw_ui(&ui, &mut cfg, tasks, &mut ui_state) {
+            return Ok(true);
+        }
 
         let mut target = display.draw();
         target.clear_color(1.0, 1.0, 1.0, 1.0);
@@ -327,7 +358,7 @@ pub fn start(mut cfg: &mut config::Config, macros: &[MacroFile]) -> Result<(), E
         target.finish().unwrap();
 
         if quit {
-            return Ok(());
+            return Ok(false);
         }
     }
 }
