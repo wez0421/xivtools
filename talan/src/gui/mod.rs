@@ -228,46 +228,46 @@ fn draw_ui<'a>(
             {
                 ui.with_item_width(70.0, || {
                     if ui
-                        .input_int(im_str!("Carpenter"), &mut cfg.gear.crp)
+                        .input_int(im_str!("Carpenter"), &mut cfg.gear[0])
                         .build()
                     {
-                        cfg.gear.crp = max(cfg.gear.crp, 0);
+                        cfg.gear[0] = max(cfg.gear[0], 0);
                     }
                     if ui
-                        .input_int(im_str!("Blacksmith"), &mut cfg.gear.bsm)
+                        .input_int(im_str!("Blacksmith"), &mut cfg.gear[1])
                         .build()
                     {
-                        cfg.gear.bsm = max(cfg.gear.bsm, 0);
+                        cfg.gear[1] = max(cfg.gear[1], 0);
                     }
-                    if ui.input_int(im_str!("Armorer"), &mut cfg.gear.arm).build() {
-                        cfg.gear.arm = max(cfg.gear.arm, 0);
+                    if ui.input_int(im_str!("Armorer"), &mut cfg.gear[2]).build() {
+                        cfg.gear[2] = max(cfg.gear[2], 0);
                     }
                     if ui
-                        .input_int(im_str!("Goldsmith"), &mut cfg.gear.gsm)
+                        .input_int(im_str!("Goldsmith"), &mut cfg.gear[3])
                         .build()
                     {
-                        cfg.gear.gsm = max(cfg.gear.gsm, 0);
+                        cfg.gear[3] = max(cfg.gear[3], 0);
                     }
                     if ui
-                        .input_int(im_str!("Leatherworker"), &mut cfg.gear.ltw)
+                        .input_int(im_str!("Leatherworker"), &mut cfg.gear[4])
                         .build()
                     {
-                        cfg.gear.ltw = max(cfg.gear.ltw, 0);
+                        cfg.gear[4] = max(cfg.gear[4], 0);
                     }
-                    if ui.input_int(im_str!("Weaver"), &mut cfg.gear.wvr).build() {
-                        cfg.gear.wvr = max(cfg.gear.wvr, 0);
-                    }
-                    if ui
-                        .input_int(im_str!("Alchemist"), &mut cfg.gear.alc)
-                        .build()
-                    {
-                        cfg.gear.alc = max(cfg.gear.alc, 0);
+                    if ui.input_int(im_str!("Weaver"), &mut cfg.gear[5]).build() {
+                        cfg.gear[5] = max(cfg.gear[5], 0);
                     }
                     if ui
-                        .input_int(im_str!("Culinarian"), &mut cfg.gear.cul)
+                        .input_int(im_str!("Alchemist"), &mut cfg.gear[6])
                         .build()
                     {
-                        cfg.gear.cul = max(cfg.gear.cul, 0);
+                        cfg.gear[6] = max(cfg.gear[6], 0);
+                    }
+                    if ui
+                        .input_int(im_str!("Culinarian"), &mut cfg.gear[7])
+                        .build()
+                    {
+                        cfg.gear[7] = max(cfg.gear[7], 0);
                     }
                 });
             }

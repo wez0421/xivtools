@@ -21,36 +21,9 @@ impl Default for Delays {
     }
 }
 
-#[derive(PartialEq, Debug, Serialize, Deserialize)]
-pub struct GearSets {
-    pub crp: i32,
-    pub bsm: i32,
-    pub arm: i32,
-    pub gsm: i32,
-    pub ltw: i32,
-    pub wvr: i32,
-    pub alc: i32,
-    pub cul: i32,
-}
-
-impl Default for GearSets {
-    fn default() -> GearSets {
-        GearSets {
-            crp: 0,
-            bsm: 0,
-            arm: 0,
-            gsm: 0,
-            ltw: 0,
-            wvr: 0,
-            alc: 0,
-            cul: 0,
-        }
-    }
-}
-
 #[derive(PartialEq, Debug, Serialize, Deserialize, Default)]
 pub struct Config {
-    pub gear: GearSets,
+    pub gear: [i32; 8],
     pub delays: Delays,
 }
 
