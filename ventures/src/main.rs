@@ -10,7 +10,7 @@ fn sleep(s: u64) {
 }
 
 const VERSION: &str = "1.0";
-fn main() -> Result<(), Error>  {
+fn main() -> Result<(), Error> {
     let matches = App::new("Ventures")
         .version(VERSION)
         .arg(
