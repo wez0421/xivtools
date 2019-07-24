@@ -1,6 +1,11 @@
-# Talan
-## A Final Fantasy XIV crafting bot
-[![Talan crafting 6x Grade 3 Infusion of Strength](http://img.youtube.com/vi/--hmcNVyhaA/0.jpg)](https://www.youtube.com/watch?v=--hmcNVyhaA)
+# XIVTools
+## Ventures: A Venture Scheduling Bot
+ventures is a simple bot that will reassign the ventures of specified retainers every sixty seconds. For more information check `-h.
+
+For best results, open the retainer window and then minimize the game while in windowed mode.
+
+## Talan: A Crafting Bot
+[![Talan (early alpha) crafting 6x Grade 3 Infusion of Strength](http://img.youtube.com/vi/--hmcNVyhaA/0.jpg)](https://www.youtube.com/watch?v=--hmcNVyhaA)
 
 ### Overview
 Talan is a crafting bot designed for max level crafters. Rather than trying to be a crafting
@@ -11,55 +16,57 @@ Special thanks to Clorifex of [GarlandTools](https://garlandtools.org) and Miu o
 for various bits of help along the way.
 
 ### Features
-Talan is still in alpha but already has a fairly solid set of features
-- It can craft any number of a given item as long as the materials are NQ.
-- It crafts faster than FFXIV's own macro interface because it can optimize for the GCD timing
-  and the amount of time its own processing takes.
+Talan is in its first beta, but already has a fairly solid set of features
+- It has a working GUI that allows a user to queue up tasks made up of any number of crafts
+  with different configurations. This includes items that can be crafted by multiple jobs,
+  and collectable turn-ins.
+- When not running in 'slow mode' it can overall craft at a competitive speed compared to pressing
+  macros. As betas progress, this is expected to speed up significantly, shaving multiple seconds
+  off a given craft.
 - It needs no action keybinds, it operates entirely through the text interface.
 - It can parse any variation of FFXIV macros (quoted, unquoted, with wait, without wait)
 - It can change gearsets to allow chaining of commands and crafts.
-- It can craft collectable items.
 - It will use both NQ and HQ materials, prioritizing NQ.
-- It verifies item names via Garlandtools.
+- It uses XIVapi.com to lookup and configure crafts.
+
+### Caveats
+- Right now Talan assumes the basic keybinds for Confirm, Cancel, Up, Down, Left, Right, Backward,
+  and Forward are default. If necessary, these can be changed in `xiv/src/ui.rs`.
+- The UI is fininky, so it's best to run the game in windowed mode and minimize it before starting a run
+  of tasks to ensure you can't mistakenly alter the modality of the game's UI. Even moving the mouse over
+  the window can interrupt the game's idea of which input method is being used.
 
 ### Roadmap
 Talan is still under active development with the following roadmap in mind:
-- Verifying all abilities in macros are valid.
-- Setting appropriate role actions if a macro requires them.
-- Determine crafting prerequisites and adding them to the task queue.
-- Allowing default macros to be assigned to difficulty tiers / progress requirements.
-- Building a web interface for using the tool.
+- Configuring Role Actions if they are found in a macro.
+- Automatically adding prereq crafts to the list.
 
 ### Usage
-Right now Talan is driven via a command line interface and is not distributed as a binary.
+Talan is largely controlled via the GUI. Run with -v, -vv, or -vvv for various amounts of debug
+info.
 
-To use it you will first need to install Rust via the [installation instructions](https://www.rust-lang.org/en-US/install.html). If given the option, you need the beta/2018 channel. Building Talan is a standard rust affair of:
+To use it you will first need to install Rust via the [installation instructions](https://www.rust-lang.org/en-US/install.html). If given the option, you need the 2018 channel. Building Talan is a standard rust affair of:
 
 ```
-chris@macbook ~/src/talan (master) $ cargo build
-    Finished dev [unoptimized + debuginfo] target(s) in 0.24s
-chris@macbook ~/src/talan (master) $ ./target/debug/talan -h
-Talan 0.5.0
-Christopher Anderson <chris@nullcode.org>
+Chris@DESKTOP ~/src/xivtools (beta) $ cargo build --release
+   Compiling talan v0.5.0 (C:\Users\Chris\src\xivtools\talan)
+    Finished release [optimized] target(s) in 4.01s
+Chris@DESKTOP ~/src/xivtools (beta) $ ./target/release/talan.exe -h
+Ventures
 
 USAGE:
-    talan [FLAGS] [OPTIONS] <macro file> <item name>
+    talan.exe [FLAGS] [SUBCOMMAND]
 
 FLAGS:
-        --collectable    Item(s) will be crafted as collectable
-    -h, --help           Prints help information
-    -d                   Increase delay between actions and UI navigation. Recommended with higher latency or input lag.
-                         [UNIMPLEMENTED]
-    -V, --version        Prints version information
+    -h, --help       Prints help information
+    -s, --slow       Run with a longer delay between UI actions. Recommended for slower computers.
+    -V, --version    Prints version information
+    -v               Log level to use. Multiple can be used
 
-OPTIONS:
-    -c <count>               Number of items to craft [default: 1]
-    -g <gearset>             Gearset to use for this crafting task. [default: 0]
-    -i <recipe_index>        For recipes which have multiple search results this offset is used to determine the
-                             specific recipe to use. Offsets start at 0 for the first recipe in search results and
-                             increment by one for each recipe down. [default: 0]
-
-ARGS:
-    <macro file>    Path to the file containing the XIV macros to use
-    <item name>     Name of the item to craft
+SUBCOMMANDS:
+    debug1
+    debug2
+    help      Prints this message or the help of the given subcommand(s)
 ```
+
+debug1 and debug2 exist as subcommands to check if Talan can control the UI.

@@ -37,6 +37,7 @@ fn convert_ingredient(r: &mut Recipe, ii: &Option<ItemIngredient>, amount: i32) 
 // Rather than From, we probably need a method to find the right recipe and fill in the offset
 impl Recipe {
     fn from_results(recipes: Vec<ApiRecipe>, item_name: &str, job: u32) -> Option<Recipe> {
+        // Figure
         for (i, recipe) in recipes.iter().enumerate() {
             if recipe.Name.to_lowercase() == item_name.to_lowercase()
                 && recipe.CraftType.ID as u32 == job
@@ -119,11 +120,13 @@ pub fn query_recipe_by_name(item_name: &str) -> Result<Vec<ApiRecipe>, Error> {
             ("indexes", "Recipe"),
             ("columns", columns.as_str()),
             ("string", item_name),
+            ("sort_field", "ID"), // XIV sorts recipe output in game by ID of item in the recipe list
             ("pretty", "1"),
         ])
         .send()?
         .text()?;
     let r: ApiReply<ApiRecipe> = serde_json::from_str(&body)?;
+    log::trace!("{:#?}", r.Results);
     Ok(r.Results)
 }
 

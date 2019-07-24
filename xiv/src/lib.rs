@@ -1,6 +1,6 @@
 pub mod ui;
 
-use failure::Error;
+use failure::{format_err, Error};
 use log;
 use std::fmt;
 
@@ -13,14 +13,16 @@ use {
     winapi::um::winuser::{EnumWindows, GetWindowTextA},
 };
 
-pub const JOBS: [&str; 8] = ["CRP", "BSM", "ARM", "GSM", "LTW", "WVR", "ALC", "CUL"];
+pub const JOB_CNT: usize = 8;
+pub const JOBS: [&str; JOB_CNT] = ["CRP", "BSM", "ARM", "GSM", "LTW", "WVR", "ALC", "CUL"];
 
 // The main handle passed back to library methods. The contents are kept
 // private to avoid leaking any winapi dependencies to callers.
 #[derive(Copy, Clone)]
 pub struct XivHandle {
     #[cfg(windows)]
-    hwnd: HWND,
+    hwnd: HWND, // The handle passed back by the winapi
+    slow_mode: bool, // Add more delay to XIV navigation
 }
 
 impl fmt::Debug for XivHandle {
@@ -35,22 +37,28 @@ impl fmt::Debug for XivHandle {
 }
 
 #[cfg(windows)]
-pub fn init() -> Result<XivHandle, Error> {
+pub fn init(slow_mode: bool) -> Result<XivHandle, Error> {
     let mut arg = std::ptr::null_mut();
     unsafe {
         // TODO: Figure out Rust error handling rather than just panicking inside a lib
         // method.
         match EnumWindows(Some(enum_callback), &mut arg as *mut HWND as LONG_PTR) {
-            0 => Ok(XivHandle { hwnd: arg as HWND }),
-            _ => Error::from("Unable to find XIV window! Is Final Fantasy XIV running?"),
+            0 => Ok(XivHandle {
+                hwnd: arg as HWND,
+                slow_mode,
+            }),
+            _ => Err(format_err!(
+                "{}",
+                "Unable to find XIV window! Is Final Fantasy XIV running?"
+            )),
         }
     }
 }
 
 #[cfg(not(windows))]
-pub fn init() -> Result<XivHandle, Error> {
+pub fn init(slow_mode: bool) -> Result<XivHandle, Error> {
     log::info!("Stub XIV lib in use.");
-    Ok(XivHandle {})
+    Ok(XivHandle { slow_mode })
 }
 
 // This callback is called for every window the user32 EnumWindows call finds
