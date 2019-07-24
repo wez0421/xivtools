@@ -69,7 +69,7 @@ pub fn parse_line(line: &str) -> Result<Action, Error> {
     };
 
     Ok(Action {
-        name: action.to_string(),
+        name: action.to_lowercase(),
         wait,
     })
 }
@@ -92,7 +92,7 @@ mod tests {
     fn macros_single_unqoted_no_wait() {
         // single word, unquoted, with no wait
         let entry = parse_line(r#"/ac Innovation"#).unwrap();
-        assert_eq!(entry.name, "Innovation");
+        assert_eq!(entry.name, "innovation");
         assert_eq!(entry.wait, 3);
     }
 
@@ -100,7 +100,7 @@ mod tests {
     fn macros_specialty() {
         // single word, unquoted, with no wait
         let entry = parse_line(r#"/ac "Specialty: Reflect""#).unwrap();
-        assert_eq!(entry.name, "Specialty: Reflect");
+        assert_eq!(entry.name, "specialty: reflect");
         assert_eq!(entry.wait, 3);
     }
 
@@ -108,7 +108,7 @@ mod tests {
     fn macros_single_qoted_no_wait() {
         // single word, quoted, with no wait
         let entry = parse_line(r#"/ac "Innovation""#).unwrap();
-        assert_eq!(entry.name, "Innovation");
+        assert_eq!(entry.name, "innovation");
         assert_eq!(entry.wait, 3);
     }
 
@@ -116,7 +116,7 @@ mod tests {
     fn macros_single_unqoted_with_wait() {
         // single word, unquoted, with a wait
         let entry = parse_line(r#"/ac Innovation <wait.2>"#).unwrap();
-        assert_eq!(entry.name, "Innovation");
+        assert_eq!(entry.name, "innovation");
         assert_eq!(entry.wait, 2);
     }
 
@@ -124,7 +124,7 @@ mod tests {
     fn macros_single_quoted_with_wait() {
         // single word, quoted, with a wait
         let entry = parse_line(r#"/ac "Innovation" <wait.2>"#).unwrap();
-        assert_eq!(entry.name, "Innovation");
+        assert_eq!(entry.name, "innovation");
         assert_eq!(entry.wait, 2);
     }
 
@@ -132,7 +132,7 @@ mod tests {
     fn macros_double_quoted_no_wait() {
         // two words, quoted, with no wait
         let entry = parse_line(r#"/ac "Byregot's Blessing""#).unwrap();
-        assert_eq!(entry.name, "Byregot's Blessing");
+        assert_eq!(entry.name, "byregot's blessing");
         assert_eq!(entry.wait, 3);
     }
 
@@ -140,7 +140,7 @@ mod tests {
     fn macros_double_quoted_with_wait() {
         // two words, quoted, with a wait
         let entry = parse_line(r#"/ac "Byregot's Blessing" <wait.3>"#).unwrap();
-        assert_eq!(entry.name, "Byregot's Blessing");
+        assert_eq!(entry.name, "byregot's blessing");
         assert_eq!(entry.wait, 3);
     }
 
@@ -169,27 +169,27 @@ mod tests {
     fn validate_test_entries(actual: Vec<Action>) -> bool {
         let expected = [
             Action {
-                name: "Comfort Zone".to_string(),
+                name: "comfort zone".to_string(),
                 wait: 3,
             },
             Action {
-                name: "Inner Quiet".to_string(),
+                name: "inner quiet".to_string(),
                 wait: 2,
             },
             Action {
-                name: "Great Strides".to_string(),
+                name: "great strides".to_string(),
                 wait: 2,
             },
             Action {
-                name: "Manipulation II".to_string(),
+                name: "manipulation ii".to_string(),
                 wait: 3,
             },
             Action {
-                name: "Byregot's Blessing".to_string(),
+                name: "byregot's blessing".to_string(),
                 wait: 3,
             },
             Action {
-                name: "Careful Synthesis III".to_string(),
+                name: "careful synthesis iii".to_string(),
                 wait: 3,
             },
         ];

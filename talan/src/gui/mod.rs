@@ -135,7 +135,8 @@ fn draw_ui<'a>(
                 ui.push_id(task_id as i32);
                 // header should be closeable
                 let header_name = ImString::new(format!(
-                    "{}x {} {}",
+                    "[{}] {}x {} {}",
+                    xiv::JOBS[task.recipe.job as usize],
                     task.quantity,
                     task.recipe.name.clone(),
                     if task.is_collectable {
@@ -227,10 +228,7 @@ fn draw_ui<'a>(
                 .build()
             {
                 ui.with_item_width(70.0, || {
-                    if ui
-                        .input_int(im_str!("Carpenter"), &mut cfg.gear[0])
-                        .build()
-                    {
+                    if ui.input_int(im_str!("Carpenter"), &mut cfg.gear[0]).build() {
                         cfg.gear[0] = max(cfg.gear[0], 0);
                     }
                     if ui
@@ -242,10 +240,7 @@ fn draw_ui<'a>(
                     if ui.input_int(im_str!("Armorer"), &mut cfg.gear[2]).build() {
                         cfg.gear[2] = max(cfg.gear[2], 0);
                     }
-                    if ui
-                        .input_int(im_str!("Goldsmith"), &mut cfg.gear[3])
-                        .build()
-                    {
+                    if ui.input_int(im_str!("Goldsmith"), &mut cfg.gear[3]).build() {
                         cfg.gear[3] = max(cfg.gear[3], 0);
                     }
                     if ui
@@ -257,10 +252,7 @@ fn draw_ui<'a>(
                     if ui.input_int(im_str!("Weaver"), &mut cfg.gear[5]).build() {
                         cfg.gear[5] = max(cfg.gear[5], 0);
                     }
-                    if ui
-                        .input_int(im_str!("Alchemist"), &mut cfg.gear[6])
-                        .build()
-                    {
+                    if ui.input_int(im_str!("Alchemist"), &mut cfg.gear[6]).build() {
                         cfg.gear[6] = max(cfg.gear[6], 0);
                     }
                     if ui
@@ -348,17 +340,19 @@ pub fn start(
         let frame_size = imgui_winit_support::get_frame_size(&window, hidpi_factor).unwrap();
 
         let ui = imgui.frame(frame_size, delta_s);
-        if draw_ui(&ui, &mut cfg, tasks, &mut ui_state) {
-            return Ok(true);
+        let result = draw_ui(&ui, &mut cfg, tasks, &mut ui_state);
+        if result {
+            quit = true;
         }
 
         let mut target = display.draw();
         target.clear_color(1.0, 1.0, 1.0, 1.0);
-        renderer.render(&mut target, ui).expect("Rendering failed");
+        if !quit {
+            renderer.render(&mut target, ui).expect("Rendering failed");
+        }
         target.finish().unwrap();
-
         if quit {
-            return Ok(false);
+            return Ok(result);
         }
     }
 }

@@ -1,5 +1,5 @@
-use crate::craft::{aaction_add, aaction_remove};
 use linked_hash_set::LinkedHashSet;
+use crate::macros::Action;
 use log;
 use xiv;
 
@@ -26,23 +26,21 @@ const ROLE_ACTIONS: [&str; 18] = [
 
 #[derive(Debug)]
 pub struct RoleActions<'a> {
-    handle: &'a xiv::XivHandle,
-    pub current_actions: LinkedHashSet<String>,
+    pub current_actions: LinkedHashSet<&'a str>,
 }
 
 // RoleActions is backed by a HashSet using a doubly linked list that can be used
 // for LRU-like behavior, ensuring that as we add AdditionalActions they will be older
 // actions not referenced in the current macro.
 impl<'a> RoleActions<'a> {
-    pub fn new(handle: &xiv::XivHandle) -> RoleActions {
+    pub fn new() -> Self {
         RoleActions {
-            handle,
             current_actions: LinkedHashSet::new(),
         }
     }
 
     pub fn is_role_action(&self, action: &str) -> bool {
-        ROLE_ACTIONS.contains(&&*action.to_lowercase())
+        ROLE_ACTIONS.contains(&action)
     }
 
     #[allow(dead_code)]
@@ -55,28 +53,30 @@ impl<'a> RoleActions<'a> {
         self.current_actions.contains(action)
     }
 
-    // Returns Some() if the craft engine needs to remove the returned action so that it
-    // can add the new one.
-    pub fn add_action(&mut self, action: &str) {
+    // Checks if |action| is in the list of role actions. If not, it
+    // removes the oldest action from the list, adds the new action,
+    // and returns the name of the action the crafting UI needs to remove
+    // to make space.
+    pub fn add_action(&mut self, action: &'a str) -> Option<Option<&str>> {
         if !self.is_role_action(action) {
             panic!("provided action is not a role action: `{}`", action);
         }
 
-        // If insert returns false then the action was already in the set and no action
-        // needs to be taken. It has the side effect of moving it to the back.
-        if !self.current_actions.insert(action.to_string()) {
-            return;
+        // If the action exists in our list then nothing eeds to be done.
+        if self.contains(action) {
+            return None;
         }
 
-        // If we now have more than 10 actions we need to remove the front element so there
-        // is space for the element we're adding next.
-        if self.current_actions.len() > 10 {
-            let old_action = self.current_actions.pop_front().unwrap();
-            log::debug!("removing role action \"{}\"", old_action);
-            aaction_remove(&self.handle, &old_action);
+        // If the action was added and fits within our limit of ten actions
+        // then the caller should add it, but doesn't need to remove anything.
+        if self.current_actions.insert(action) && self.current_actions.len() > 10 {
+            return Some(None);
         }
-        log::debug!("adding role action \"{}\"", action);
-        aaction_add(&self.handle, action);
+
+        // Otherwise, we need to pop off the oldest action and let the caller know
+        // to update the client's bookkeeping before adding the new action.
+
+        return Some(Some(self.current_actions.pop_front().unwrap()));
     }
 }
 

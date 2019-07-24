@@ -23,7 +23,8 @@ impl Default for Delays {
 
 #[derive(PartialEq, Debug, Serialize, Deserialize, Default)]
 pub struct Config {
-    pub gear: [i32; 8],
+    // Stored as i32 because imgui doesn't bind to unsigned ints.
+    pub gear: [i32; xiv::JOB_CNT],
     pub delays: Delays,
 }
 
@@ -73,14 +74,14 @@ mod tests {
     fn test_write_and_read() -> Result<(), Error> {
         let file = NamedTempFile::new()?;
         let mut c1 = Config::default();
-        c1.gear.crp = 1;
-        c1.gear.bsm = 2;
-        c1.gear.arm = 3;
-        c1.gear.gsm = 4;
-        c1.gear.ltw = 5;
-        c1.gear.wvr = 6;
-        c1.gear.alc = 7;
-        c1.gear.cul = 8;
+        c1.gear[0] = 1;
+        c1.gear[1] = 2;
+        c1.gear[2] = 3;
+        c1.gear[3] = 4;
+        c1.gear[4] = 5;
+        c1.gear[5] = 6;
+        c1.gear[6] = 7;
+        c1.gear[7] = 8;
         assert!(write_config_internal(&c1, file.path()).is_ok());
         let c2 = read_config_internal(file.path());
         assert_eq!(c1, c2);
