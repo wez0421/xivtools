@@ -20,9 +20,8 @@ Talan is in its first beta, but already has a fairly solid set of features
 - It has a working GUI that allows a user to queue up tasks made up of any number of crafts
   with different configurations. This includes items that can be crafted by multiple jobs,
   and collectable turn-ins.
-- When not running in 'slow mode' it can overall craft at a competitive speed compared to pressing
-  macros. As betas progress, this is expected to speed up significantly, shaving multiple seconds
-  off a given craft.
+- When not running in 'slow mode' it can overall craft 1/4th of a second *faster* per action than
+  the in-game macro engine.
 - It needs no action keybinds, it operates entirely through the text interface.
 - It can parse any variation of FFXIV macros (quoted, unquoted, with wait, without wait)
 - It can change gearsets to allow chaining of commands and crafts.
@@ -32,17 +31,17 @@ Talan is in its first beta, but already has a fairly solid set of features
 ### Caveats / Known Issues
 - Right now Talan assumes the basic keybinds for Confirm, Cancel, Up, Down, Left, Right, Backward,
   and Forward are default. If necessary, these can be changed in `xiv/src/ui.rs`.
-- The UI is fininky, so it's best to run the game in windowed mode and minimize it before starting a run
+- The XIV UI is fininky, so it's best to run the game in windowed mode and minimize it before starting a run
   of tasks to ensure you can't mistakenly alter the modality of the game's UI. Even moving the mouse over
   the window can interrupt the game's idea of which input method is being used.
-- Item quantity can be made negative. I recommend you don't.
 - Talan will look in $the current working directory for a directory named `macros` to search for macros.
   If the `macros` directory doesn't exist then you'll experience a crash.
 
 ### Roadmap
 Talan is still under active development with the following roadmap in mind:
-- Configuring Role Actions if they are found in a macro.
+- Configuring Role Actions if they are found in a macro. (possibly unnecessary in Shadowbringers)
 - Automatically adding prereq crafts to the list.
+- Using crafter food as necessary.
 
 ### Usage
 Talan is largely controlled via the GUI. Run with -v, -vv, or -vvv for various amounts of debug
