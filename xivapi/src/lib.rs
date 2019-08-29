@@ -1,7 +1,7 @@
 use failure::{format_err, Error};
 use log;
 use reqwest;
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
 use serde_json;
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -246,7 +246,7 @@ pub fn query_recipe_by_name(item_name: &str) -> Result<Vec<ApiRecipe>, Error> {
         .query(&[
             ("indexes", "Recipe"),
             ("columns", &s),
-            ("string", item_name),
+            ("string", item_name.trim()),
             ("pretty", "1"),
         ])
         .send()?
