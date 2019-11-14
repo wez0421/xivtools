@@ -199,7 +199,7 @@ pub fn get_macro_for_recipe(
 
         // At this point check if the recipe durability exists in the macro's
         // durability list.
-        if m.durability.iter().find(|&d| *d == durability).is_some() {
+        if m.durability.iter().any(|&d| d == durability) {
             return i;
         }
     }
@@ -223,7 +223,7 @@ mod tests {
         [[xiv_macro]]
         name = "Test Macro"
         durability = [ 80 ]
-        max_rlvl = 390
+        max_rlvl = 70
         actions = """
             /ac test string
             /ac string test <wait.2>
