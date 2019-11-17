@@ -3,6 +3,7 @@
 members = [
     "gui-support",
     "talan",
+    "turn-in",
     "ventures",
     "xiv",
     "xivapi",

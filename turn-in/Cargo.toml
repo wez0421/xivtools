@@ -1,0 +1,12 @@
+[package]
+name = "turn-in"
+version = "0.1.0"
+authors = ["Christopher Anderson <chris@nullcode.org>"]
+edition = "2018"
+
+[dependencies]
+xiv = { path = "../xiv" }
+env_logger = "0.7.1"
+log = "0.4.6"
+failure = "0.1.5"
+structopt = "0.2.18"

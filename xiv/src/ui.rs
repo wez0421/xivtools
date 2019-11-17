@@ -31,6 +31,7 @@ mod constants {
     pub const KEY_ENTER: i32 = VK_RETURN;
     pub const KEY_ESCAPE: i32 = VK_ESCAPE;
     pub const KEY_BACKSPACE: i32 = VK_BACK;
+    pub const KEY_SUBCOMMANDS: i32 = VK_HOME;
     pub const MSG_KEY_UP: u32 = WM_KEYUP;
     pub const MSG_KEY_DOWN: u32 = WM_KEYDOWN;
     pub const MSG_KEY_CHAR: u32 = WM_CHAR;
@@ -49,6 +50,7 @@ mod constants {
     pub const KEY_ENTER: i32 = 0;
     pub const KEY_BACKSPACE: i32 = 0;
     pub const KEY_ESCAPE: i32 = 0;
+    pub const KEY_SUBCOMMANDS: i32 = 0;
     pub const MSG_KEY_UP: u32 = 0;
     pub const MSG_KEY_DOWN: u32 = 0;
     pub const MSG_KEY_CHAR: u32 = 0;
@@ -113,6 +115,11 @@ pub fn press_enter(xiv_handle: super::XivHandle) {
 pub fn press_escape(xiv_handle: super::XivHandle) {
     log::debug!("[esc]");
     send_key(xiv_handle, constants::KEY_ESCAPE);
+}
+
+pub fn press_subcommands(xiv_handle: super::XivHandle) {
+    log::debug!("[subcommands]");
+    send_key(xiv_handle, constants::KEY_SUBCOMMANDS);
 }
 
 pub fn target_nearest_npc(xiv_handle: super::XivHandle) {
