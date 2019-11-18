@@ -14,6 +14,8 @@ pub struct Options {
     pub non_doh_gear: i32,
     #[serde(default)]
     pub use_slow_navigation: bool,
+    #[serde(default)]
+    pub should_clear_window_on_craft: bool,
 }
 
 // Placeholder.

@@ -274,6 +274,16 @@ impl<'a, 'b> Gui<'a> {
             if let Some(menu) = ui.begin_menu(im_str!("Options"), true) {
                 MenuItem::new(im_str!("Gear Configuration"))
                     .build_with_ref(ui, &mut self.state.show_configuration_window);
+                ui.separator();
+                // For MenuItems if we use |build_with_ref| we can't have the menu ite,
+                // clear its own state.
+                if MenuItem::new(im_str!("Clear XIV Window Before Crafting"))
+                    .selected(config.options.should_clear_window_on_craft)
+                    .build(ui)
+                {
+                    config.options.should_clear_window_on_craft =
+                        !config.options.should_clear_window_on_craft;
+                }
                 menu.end(ui);
             }
             main_menu.end(ui);
