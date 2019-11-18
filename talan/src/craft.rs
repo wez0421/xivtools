@@ -12,7 +12,7 @@ const GCD_PADDING: u64 = 250;
 
 // Craft all the configured tasks and update the client by way of |status_callback|.
 pub fn craft_items<'a, F, S>(
-    handle: xiv::XivHandle,
+    mut handle: xiv::XivHandle,
     options: &'a Options,
     tasks: &[task::Task],
     mut status_fn: F,
@@ -26,6 +26,7 @@ pub fn craft_items<'a, F, S>(
     let mut status: Vec<task::Status> = tasks.iter().map(task::Status::from).collect();
     status_fn(&status[..]);
 
+    handle.use_slow_navigation = options.use_slow_dialog_navigation;
     if options.should_clear_window_on_craft {
         // Get the UI into a state we can trust it, and pray the user doesn't touch it.
         ui::clear_window(handle);

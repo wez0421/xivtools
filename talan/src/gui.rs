@@ -10,7 +10,7 @@ use std::cmp::{max, min};
 use std::sync::mpsc::{Receiver, Sender};
 
 // These represent a ratio compared to WINDOW_W and WINDOW_H
-const CONFIGURATION_SIZE: [f32; 2] = [300.0, 500.0];
+const CONFIGURATION_SIZE: [f32; 2] = [300.0, 0.0];
 
 const WINDOW_SIZE: [f32; 2] = [1024.0, 768.0];
 
@@ -50,7 +50,7 @@ struct UiState {
     search_str: ImString,
     // The job dropdown selection.
     search_job: usize,
-    show_configuration_window: bool,
+    show_gear_set_window: bool,
     task_list_modification: Option<TaskListModification>,
     should_exit: bool,
 }
@@ -68,7 +68,7 @@ impl Default for UiState {
             craft_status: None,
             search_str: ImString::with_capacity(128),
             search_job: 0,
-            show_configuration_window: false,
+            show_gear_set_window: false,
             task_list_modification: None,
             should_exit: false,
         }
@@ -177,8 +177,8 @@ impl<'a, 'b> Gui<'a> {
             self.main_menu(&ui, &mut config);
             self.add_tasks_window(&ui);
             self.task_list_window(&ui, &mut config);
-            if self.state.show_configuration_window {
-                self.configuration_window(&ui, &mut config);
+            if self.state.show_gear_set_window {
+                self.gear_set_window(&ui, &mut config);
             }
             // Always try to render a popup in case we have data primed for one.
             self.modal_popup_window(&ui);
@@ -226,7 +226,10 @@ impl<'a, 'b> Gui<'a> {
                     .shortcut(im_str!("Ctrl+S"))
                     .build(&ui)
                 {
-                    log::debug!("Unimplemented!");
+                    match write_config(None, config) {
+                        Ok(_) => log::info!("Wrote configuration to disk."),
+                        Err(e) => log::error!("Failed to write configuration: {}", e.to_string()),
+                    };
                 }
                 ui.separator();
                 MenuItem::new(im_str!("Exit"))
@@ -273,7 +276,7 @@ impl<'a, 'b> Gui<'a> {
             }
             if let Some(menu) = ui.begin_menu(im_str!("Options"), true) {
                 MenuItem::new(im_str!("Gear Configuration"))
-                    .build_with_ref(ui, &mut self.state.show_configuration_window);
+                    .build_with_ref(ui, &mut self.state.show_gear_set_window);
                 ui.separator();
                 // For MenuItems if we use |build_with_ref| we can't have the menu ite,
                 // clear its own state.
@@ -283,6 +286,13 @@ impl<'a, 'b> Gui<'a> {
                 {
                     config.options.should_clear_window_on_craft =
                         !config.options.should_clear_window_on_craft;
+                }
+                if MenuItem::new(im_str!("Use Slow Dialog Navigation"))
+                    .selected(config.options.use_slow_dialog_navigation)
+                    .build(ui)
+                {
+                    config.options.use_slow_dialog_navigation =
+                        !config.options.use_slow_dialog_navigation;
                 }
                 menu.end(ui);
             }
@@ -512,69 +522,41 @@ impl<'a, 'b> Gui<'a> {
     }
 
     /// The window for all configuration and optional settings.
-    fn configuration_window(&mut self, ui: &imgui::Ui, config: &mut config::Config) {
-        Window::new(im_str!("Configuration"))
+    fn gear_set_window(&mut self, ui: &imgui::Ui, config: &mut config::Config) {
+        Window::new(im_str!("Gear Set Configuration"))
             .size(CONFIGURATION_SIZE, Condition::FirstUseEver)
-            .opened(&mut self.state.show_configuration_window)
+            .opened(&mut self.state.show_gear_set_window)
             .resizable(false)
             .collapsible(false)
             .focused(true)
             .build(&ui, || {
-                if ui
-                    .collapsing_header(im_str!("Gear Sets"))
-                    .default_open(true)
-                    .build()
-                {
-                    ui.columns(2, im_str!("gear columns"), false);
-                    let _w = ui.push_item_width(ui.window_size()[0] * 0.33);
-                    for (i, name) in xiv::JOBS.iter().enumerate() {
-                        if ui
-                            .input_int(&ImString::new(*name), &mut config.options.gear[i])
-                            .build()
-                        {
-                            config.options.gear[i] = max(config.options.gear[i], 0);
-                        }
-                        ui.next_column();
-                        let id = ui.push_id(i as i32); // specialists need a unique id
-                        if ui.checkbox(im_str!("specialist"), &mut config.options.specialist[i])
-                            && config
-                                .options
-                                .specialist
-                                .iter()
-                                .fold(0, |acc, &x| acc + (x as i32))
-                                > 3
-                        {
-                            log::error!(
-                                "Cannot set {} as a specialist, limit of 3 already reached!",
-                                xiv::JOBS[i]
-                            );
-                            config.options.specialist[i] = false;
-                        }
-                        ui.next_column();
-                        id.pop(&ui);
+                ui.columns(2, im_str!("gear columns"), false);
+                let _w = ui.push_item_width(ui.window_size()[0] * 0.33);
+                for (i, name) in xiv::JOBS.iter().enumerate() {
+                    if ui
+                        .input_int(&ImString::new(*name), &mut config.options.gear[i])
+                        .build()
+                    {
+                        config.options.gear[i] = max(config.options.gear[i], 0);
                     }
-                }
-                ui.columns(1, im_str!("other options"), false);
-                if ui
-                    .collapsing_header(im_str!("Options"))
-                    .default_open(true)
-                    .build()
-                {
-                    ui.checkbox(
-                        im_str!("Use slower menu navigation"),
-                        &mut config.options.use_slow_navigation,
-                    );
-                    ui.indent();
-                    ui.text_wrapped(im_str!(
-                        "Use this option if you have a lower (<30) fps or higher (200ms+?) \
-                         latency."
-                    ));
-                    ui.unindent();
-                };
-                if ui.button(im_str!("Save changes"), [0.0, 0.0])
-                    && write_config(None, config).is_err()
-                {
-                    log::error!("Error writing config :(")
+                    ui.next_column();
+                    let id = ui.push_id(i as i32); // specialists need a unique id
+                    if ui.checkbox(im_str!("specialist"), &mut config.options.specialist[i])
+                        && config
+                            .options
+                            .specialist
+                            .iter()
+                            .fold(0, |acc, &x| acc + (x as i32))
+                            > 3
+                    {
+                        log::error!(
+                            "Cannot set {} as a specialist, limit of 3 already reached!",
+                            xiv::JOBS[i]
+                        );
+                        config.options.specialist[i] = false;
+                    }
+                    ui.next_column();
+                    id.pop(&ui);
                 }
             });
     }
