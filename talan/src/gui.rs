@@ -294,6 +294,12 @@ impl<'a, 'b> Gui<'a> {
                     config.options.use_slow_dialog_navigation =
                         !config.options.use_slow_dialog_navigation;
                 }
+                if MenuItem::new(im_str!("Change Job Before Starting Tasks"))
+                    .selected(config.options.swap_job_before_tasks)
+                    .build(ui)
+                {
+                    config.options.swap_job_before_tasks = !config.options.swap_job_before_tasks;
+                }
                 menu.end(ui);
             }
             main_menu.end(ui);

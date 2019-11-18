@@ -10,6 +10,15 @@ use xiv::ui;
 // Milliseconds to pad the GCD to account for latency
 const GCD_PADDING: u64 = 250;
 
+pub fn find_swap_gear_set(avoid: u32, gear_sets: &[i32]) -> Option<i32> {
+    for (i, &set) in gear_sets.iter().enumerate() {
+        if i != avoid as usize && set != 0 {
+            return Some(set);
+        }
+    }
+    None
+}
+
 // Craft all the configured tasks and update the client by way of |status_callback|.
 pub fn craft_items<'a, F, S>(
     mut handle: xiv::XivHandle,
@@ -35,9 +44,13 @@ pub fn craft_items<'a, F, S>(
     // Clear role actions before we iterate tasks so the game state
     // and role action state will be in sync.
     let mut job: u32 = 256;
-    if options.non_doh_gear != 0 {
-        change_gearset(handle, options.non_doh_gear);
-        ui::wait(1.0);
+    if options.swap_job_before_tasks {
+        if let Some(swap_set) = find_swap_gear_set(tasks[0].recipe.job, &options.gear[..]) {
+            change_gearset(handle, swap_set);
+            ui::wait(1.0);
+        } else {
+            log::error!("Couldn't find a spare gear set to swap to!");
+        }
     }
 
     let mut stop: bool = false;
