@@ -11,7 +11,7 @@ pub struct Options {
     #[serde(default)]
     pub specialist: [bool; xiv::JOB_CNT],
     #[serde(default)]
-    pub non_doh_gear: i32,
+    pub swap_job_before_tasks: bool,
     #[serde(default)]
     pub use_slow_dialog_navigation: bool,
     #[serde(default)]
