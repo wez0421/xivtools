@@ -176,12 +176,14 @@ pub fn get_macro_for_recipe(
     for (i, m) in macros().iter().enumerate() {
         if let Some(m_min) = m.min_rlvl {
             if m_min > rlvl {
+                log::trace!("\"{}\": m_min {} > rlvl {}", m.name, m_min, rlvl);
                 continue;
             }
         }
 
         if let Some(m_max) = m.max_rlvl {
             if m_max < rlvl {
+                log::trace!("\"{}\": m_max {} < rlvl {}", m.name, m_max, rlvl);
                 continue;
             }
         }
@@ -189,11 +191,23 @@ pub fn get_macro_for_recipe(
         // Match on difficulty if it exists
         if let Some(m_difficulty) = m.difficulty {
             if m_difficulty != difficulty {
+                log::trace!(
+                    "\"{}\": m_difficulty {} != difficulty {}",
+                    m.name,
+                    m_difficulty,
+                    difficulty
+                );
                 continue;
             }
         }
 
         if m.specialist && m.specialist != specialist {
+            log::trace!(
+                "\"{}\": m_specialist {} != specialist {}",
+                m.name,
+                m.specialist,
+                specialist
+            );
             continue;
         }
 
