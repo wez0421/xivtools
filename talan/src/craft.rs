@@ -26,8 +26,10 @@ pub fn craft_items<'a, F, S>(
     let mut status: Vec<task::Status> = tasks.iter().map(task::Status::from).collect();
     status_fn(&status[..]);
 
-    // Get the UI into a state we can trust it, and pray the user doesn't touch it.
-    ui::clear_window(handle);
+    if options.should_clear_window_on_craft {
+        // Get the UI into a state we can trust it, and pray the user doesn't touch it.
+        ui::clear_window(handle);
+    }
 
     // Clear role actions before we iterate tasks so the game state
     // and role action state will be in sync.
