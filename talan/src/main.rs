@@ -7,8 +7,8 @@ mod recipe;
 mod rpc;
 mod task;
 
+use anyhow::{Error, Result};
 use env_logger;
-use failure::Error;
 use log;
 use rpc::{Request, Response, Worker};
 use std::path::PathBuf;

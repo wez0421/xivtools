@@ -1,6 +1,5 @@
-use failure::{format_err, Error};
+use anyhow::{anyhow, Error, Result};
 use log;
-use reqwest;
 use serde::Deserialize;
 use serde_json;
 use std::cmp::Ordering;
@@ -78,7 +77,7 @@ impl ApiRecipe {
         let links = self
             .GameContentLinks
             .clone()
-            .ok_or_else(|| format_err!("No GameContentLinks"))?;
+            .ok_or_else(|| anyhow!("No GameContentLinks"))?;
 
         // RecipeNotebookList is organized into rows and columns. Below
         // represents column 9 in row 1053.
@@ -97,7 +96,7 @@ impl ApiRecipe {
         let row = links
             .RecipeNotebookList
             .get(column_str)
-            .ok_or_else(|| (format_err!("Can't get column {}", column_str)))?[0];
+            .ok_or_else(|| (anyhow!("Can't get column {}", column_str)))?[0];
 
         Ok((
             self.CraftType.ID,
@@ -171,16 +170,12 @@ pub fn query_recipe(item_name: &str) -> Result<Vec<ApiRecipe>, Error> {
         "GameContentLinks",
     ];
     let s: String = columns.iter().map(|e| e.to_string() + ",").collect();
-    let body = reqwest::Client::new()
-        .get(XIVAPI_SEARCH_URL)
-        .query(&[
-            ("indexes", "Recipe"),
-            ("columns", &s),
-            ("string", item_name.trim()),
-            ("pretty", "1"),
-        ])
-        .send()?
-        .text()?;
+    let body = ureq::get(XIVAPI_SEARCH_URL)
+        .query("indexes", "Recipe")
+        .query("columns", &s)
+        .query("string", item_name.trim())
+        .call()
+        .into_string()?;
     let mut r: ApiReply<ApiRecipe> = serde_json::from_str(&body)?;
     r.Results.sort();
     log::trace!("{:#?}", r.Results);
@@ -189,23 +184,13 @@ pub fn query_recipe(item_name: &str) -> Result<Vec<ApiRecipe>, Error> {
 
 #[cfg(test)]
 mod test {
-    use std::sync::Once;
-    static START: Once = Once::new();
-
-    fn setup() {
-        START.call_once(|| {
-            env_logger::init();
-        });
-    }
-
     use super::*;
+
     #[test]
     fn basic_get_test() -> Result<(), Error> {
-        setup();
-
         let api_results = query_recipe("Rakshasa Axe")?;
         let item = &api_results[0];
-        log::trace!("item fetched: {:#?}", item);
+        println!("item fetched: {:#?}", item);
         assert_eq!(item.Name, "Rakshasa Axe");
         assert_eq!(item.CraftType.ID, 1);
         assert_eq!(item.AmountIngredient0, 3);
@@ -219,19 +204,15 @@ mod test {
 
     #[test]
     fn triphane_test() -> Result<(), Error> {
-        setup();
-
         let api_results = query_recipe("Triphane")?;
         let item = &api_results[0];
-        log::trace!("item fetched: {:#?}", item);
+        println!("item fetched: {:#?}", item);
         assert_eq!(item.Name, "Triphane");
         Ok(())
     }
 
     #[test]
     fn swallowskin_gloves_test() -> Result<(), Error> {
-        setup();
-
         let names = vec![
             "Swallowskin Gloves of Fending",
             "Swallowskin Gloves of Maiming",
@@ -245,7 +226,7 @@ mod test {
 
         let api_results = query_recipe("Swallowskin Gloves")?;
 
-        log::trace!("results: {:#?}", api_results);
+        println!("results: {:#?}", api_results);
         assert_eq!(api_results.len(), names.len());
         for (i, recipe) in api_results.iter().enumerate() {
             assert_eq!(recipe.Name, names[i]);
@@ -259,8 +240,6 @@ mod test {
     #[test]
     #[ignore]
     fn gloves_of_aiming_test() -> Result<(), Error> {
-        setup();
-
         let names = vec![
             "Saurian Gloves of Aiming",
             "Archaeoskin Gloves of Aiming",
@@ -286,7 +265,7 @@ mod test {
 
         let api_results = query_recipe("gloves of aiming")?;
 
-        log::trace!("results: {:#?}", api_results);
+        println!("results: {:#?}", api_results);
         assert_eq!(api_results.len(), names.len());
         for (i, recipe) in api_results.iter().enumerate() {
             assert_eq!(recipe.Name, names[i]);

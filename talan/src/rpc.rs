@@ -119,7 +119,7 @@ impl Worker {
 #[cfg(test)]
 mod test {
     use super::*;
-    use failure::Error;
+    use anyhow::{Error, Result};
     use std::sync::mpsc::{channel, Receiver, Sender};
     use std::thread;
 

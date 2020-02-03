@@ -86,7 +86,7 @@ impl Recipe {
 #[cfg(test)]
 mod test {
     use super::*;
-    use failure::Error;
+    use anyhow::{Error, Result};
 
     #[test]
     fn bsm_cloud_pearl_test() -> Result<(), Error> {

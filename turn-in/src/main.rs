@@ -1,5 +1,5 @@
+use anyhow::{Error, Result};
 use env_logger;
-use failure::Error;
 use structopt;
 use structopt::StructOpt;
 use xiv;

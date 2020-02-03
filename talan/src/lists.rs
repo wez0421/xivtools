@@ -1,5 +1,5 @@
+use anyhow::{anyhow, Error, Result};
 use clipboard::{ClipboardContext, ClipboardProvider};
-use failure::{format_err, Error};
 
 // Should use string probably
 #[derive(Debug, PartialEq)]
@@ -33,7 +33,7 @@ fn parse_list_line(line: &str) -> Result<ListItem, Error> {
     // assume the string is just an item name and count is 1.
     let v: Vec<&str> = line.split("x ").collect();
     if line.is_empty() || !line.chars().nth(0).unwrap().is_ascii_digit() || v.len() < 2 {
-        return Err(format_err!("Empty list item!"));
+        return Err(anyhow!("Empty list item!"));
     }
 
     let mut count = 0;

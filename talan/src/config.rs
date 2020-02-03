@@ -1,5 +1,5 @@
 use crate::task::Task;
-use failure::Error;
+use anyhow::{Error, Result};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
@@ -65,25 +65,6 @@ pub fn write_config(path: Option<&Path>, cfg: &Config) -> Result<(), Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::NamedTempFile;
-
-    #[test]
-    fn test_write_and_read() -> Result<(), Error> {
-        let file = NamedTempFile::new()?;
-        let mut c1 = Config::default();
-        c1.options.gear[0] = 1;
-        c1.options.gear[1] = 2;
-        c1.options.gear[2] = 3;
-        c1.options.gear[3] = 4;
-        c1.options.gear[4] = 5;
-        c1.options.gear[5] = 6;
-        c1.options.gear[6] = 7;
-        c1.options.gear[7] = 8;
-        assert!(write_config(Some(file.path()), &c1).is_ok());
-        let c2 = read_config(file.path())?;
-        assert_eq!(c1, c2);
-        Ok(())
-    }
 
     #[test]
     fn test_default_config() -> Result<(), Error> {

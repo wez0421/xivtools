@@ -1,5 +1,6 @@
-use failure::Error;
-use simple_logger;
+use anyhow::{Error, Result};
+use env_logger;
+use log;
 use std::thread;
 use std::time::{Duration, Instant};
 use structopt;
@@ -95,11 +96,16 @@ fn retainer_id_to_period(id: u64, args: &Opts) -> u64 {
 
 fn parse_arguments() -> Result<(xiv::XivHandle, Vec<Retainer>), Error> {
     let args = Opts::from_args();
-    simple_logger::init_with_level(match args.verbose {
-        1 => log::Level::Debug,
-        2 => log::Level::Trace,
-        _ => log::Level::Info,
-    })?;
+    env_logger::Builder::from_default_env()
+        .filter(
+            Some("ventures"),
+            match args.verbose {
+                1 => log::LevelFilter::Debug,
+                2 => log::LevelFilter::Trace,
+                _ => log::LevelFilter::Info,
+            },
+        )
+        .init();
 
     // Parse a mix of ranges specified by X-Y or separated by commas X,Y,Z
     let mut retainers: Vec<Retainer> = Vec::new();
