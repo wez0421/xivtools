@@ -1,3 +1,4 @@
+mod action;
 mod config;
 mod craft;
 mod gui;

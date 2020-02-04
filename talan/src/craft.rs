@@ -1,6 +1,7 @@
 //use crate::role_actions::RoleActions;
+use crate::action::Action;
 use crate::config::Options;
-use crate::macros::{macros, Action};
+use crate::macros::macros;
 use crate::task;
 use log;
 use std::thread::sleep;

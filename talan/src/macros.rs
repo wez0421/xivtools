@@ -1,22 +1,9 @@
-use anyhow::anyhow;
+use crate::action::{Action, ACTIONS};
+use anyhow::{Result, anyhow};
 use imgui::ImString;
 use once_cell::sync::OnceCell;
 use serde::Deserialize;
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
-
-#[derive(Clone, Debug)]
-pub struct MacroFile {
-    pub name: String,
-    pub path: PathBuf,
-    pub actions: Vec<Action>,
-}
-
-#[derive(Clone, Debug, Deserialize, PartialEq)]
-pub struct Action {
-    pub name: &'static str,
-    pub wait_ms: u64,
-}
+use std::path::Path;
 
 // The |Toml| variant structures are used entirely for deserializing
 // from a user friendly format into the actions necessary for Talan.
@@ -54,54 +41,11 @@ pub fn macros() -> &'static Vec<Macro> {
     MACROS.get().expect("Macros have not been initialized")
 }
 
-pub fn from_path(path: &Path) -> anyhow::Result<()> {
+pub fn from_path(path: &Path) -> Result<()> {
     from_str(&std::fs::read_to_string(path)?)
 }
 
-lazy_static::lazy_static! {
-    static ref ACTIONS: HashMap<&'static str, Action> = {
-        let mut h = HashMap::new();
-        // Buff actions
-        h.insert("final appraisal", Action { name: "Final Appraisal",  wait_ms: 1500 });
-        h.insert("great strides", Action { name: "Great Strides",  wait_ms: 1500 });
-        h.insert("ingenuity", Action { name: "Ingenuity",  wait_ms: 1500 });
-        h.insert("inner quiet", Action { name: "Inner Quiet",  wait_ms: 1500 });
-        h.insert("innovation", Action { name: "Innovation",  wait_ms: 1500 });
-        h.insert("name of the elements", Action { name: "Name of the Elements",  wait_ms: 1500 });
-        h.insert("reuse", Action { name: "Reuse",  wait_ms: 1500 });
-        h.insert("waste not ii", Action { name: "Waste Not II",  wait_ms: 1500 });
-        h.insert("waste not", Action { name: "Waste Not",  wait_ms: 1500 });
-        // Progress Actions
-        h.insert("basic synthesis", Action { name: "Basic Synthesis",  wait_ms: 2500 });
-        h.insert("brand of the elements", Action { name: "Brand of the Elements",  wait_ms: 2500 });
-        h.insert("careful synthesis", Action { name: "Careful Synthesis",  wait_ms: 2500 });
-        h.insert("focused synthesis", Action { name: "Focused Synthesis",  wait_ms: 2500 });
-        h.insert("intensive synthesis", Action { name: "Intensive Synthesis",  wait_ms: 2500 });
-        h.insert("muscle memory", Action { name: "Muscle Memory",  wait_ms: 2500 });
-        h.insert("rapid synthesis", Action { name: "Rapid Synthesis",  wait_ms: 2500 });
-        // Quality Actions
-        h.insert("basic touch", Action { name: "Basic Touch",  wait_ms: 2500 });
-        h.insert("byregot's blessing", Action { name: "Byregot's Blessing",  wait_ms: 2500 });
-        h.insert("focused touch", Action { name: "Focused Touch",  wait_ms: 2500 });
-        h.insert("hasty touch", Action { name: "Hasty Touch",  wait_ms: 2500 });
-        h.insert("patient touch", Action { name: "Patient Touch",  wait_ms: 2500 });
-        h.insert("precise touch", Action { name: "Precise Touch",  wait_ms: 2500 });
-        h.insert("prudent touch", Action { name: "Prudent Touch",  wait_ms: 2500 });
-        h.insert("reflect", Action { name: "Reflect",  wait_ms: 2500 });
-        h.insert("standard touch", Action { name: "Standard Touch",  wait_ms: 2500 });
-        h.insert("trained eye", Action { name: "Trained Eye",  wait_ms: 2500 });
-        // Repair Actions
-        h.insert("manipulation", Action { name: "Manipulation",  wait_ms: 1500 });
-        h.insert("master's mend", Action { name: "Master's Mend",  wait_ms: 2500 });
-        // Other Actions
-        h.insert("delicate synthesis", Action { name: "Delicate Synthesis",  wait_ms: 2500 });
-        h.insert("observe", Action { name: "Observe",  wait_ms: 2500 });
-        h.insert("tricks of the trade", Action { name: "Tricks of the Trade",  wait_ms: 2500 });
-        h
-    };
-}
-
-pub fn from_str(s: &str) -> anyhow::Result<()> {
+pub fn from_str(s: &str) -> Result<()> {
     let des = toml::from_str::<MacroFileToml>(s)?;
     let mut parsed_vec: Vec<Macro> = Vec::new();
     for macro_toml in &des.xiv_macro {
@@ -126,7 +70,7 @@ pub fn from_str(s: &str) -> anyhow::Result<()> {
 }
 
 // Attempts to parse macros in |buffer| and return a list of actions.
-fn parse_buffer(buffer: &str) -> anyhow::Result<Vec<&'static Action>> {
+fn parse_buffer(buffer: &str) -> Result<Vec<&'static Action>> {
     let mut actions = vec![];
     for line in buffer.trim().lines() {
         if line.trim().as_bytes()[0] == b'#' {
@@ -142,7 +86,7 @@ fn parse_buffer(buffer: &str) -> anyhow::Result<Vec<&'static Action>> {
 
 // Extract the action for a given line in a macro. Returns a
 // String in the event of an error indicating a malformed macros.
-pub fn parse_line(line: &str) -> anyhow::Result<&'static Action> {
+pub fn parse_line(line: &str) -> Result<&'static Action> {
     let chars: Vec<char> = line.chars().collect();
     if chars.len() < 4 || chars[0] != '/' || chars[1] != 'a' || chars[2] != 'c' || chars[3] != ' ' {
         return Err(anyhow!("Macro is invalid: \"{}\"", line));
