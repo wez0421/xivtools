@@ -13,6 +13,7 @@ pub struct Recipe {
     pub difficulty: u32,
     pub quality: u32,
     pub level: u32,
+    pub specialist: bool,
     pub id: u32,
     pub index: usize,
     pub job: u32,
@@ -49,6 +50,7 @@ impl From<&xivapi::ApiRecipe> for Recipe {
             quality: (item.RecipeLevelTable.Quality * item.QualityFactor) / 100,
             id: item.ID,
             name: item.Name.clone(),
+            specialist: (item.IsSpecializationRequired == 1),
             job: item.CraftType.ID as u32,
             index: 0,
             mats,
@@ -85,13 +87,14 @@ impl Recipe {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+    use super::Recipe;
     use anyhow::{Error, Result};
+    use xivapi::query_recipe;
 
     #[test]
-    fn bsm_cloud_pearl_test() -> Result<(), Error> {
+    fn bsm_cloud_pearl() -> Result<()> {
         let item_name = "Cloud Pearl";
-        let query_results = xivapi::query_recipe(item_name)?;
+        let query_results = query_recipe(item_name)?;
         assert!(!query_results.is_empty());
         // 1 = BSM. The results for Cloud Pearl will look like:
         // CRP ---
@@ -113,20 +116,25 @@ mod test {
 
     // Verify that if we don't specify a job then we'll get the first result that matches the name.
     #[test]
-    fn no_job_specified_test() -> Result<(), Error> {
+    fn no_job_specified() -> Result<()> {
         // Cloud Pearl exists for all jobs, so the first result should be CRP.
-        let item1 = "Cloud Pearl";
-        let recipe = Recipe::filter(&xivapi::query_recipe(item1)?[..], &item1, None);
-        let r = recipe.unwrap();
-        assert!(r.job == 0);
-        assert!(r.name == item1);
+        let tests = [("Cloud Pearl", 0), ("Tungsten Steel Ingot", 1)];
+        for test in tests.iter() {
+            let recipe = Recipe::filter(&query_recipe(test.0)?[..], test.0, None).unwrap();
+            assert_eq!(recipe.name, test.0);
+            assert_eq!(recipe.job, test.1);
+        }
+        Ok(())
+    }
 
-        // Both ARM and BSM can make this ingot, but BSM is first.
-        let item2 = "Tungsten Steel Ingot";
-        let recipe = Recipe::filter(&xivapi::query_recipe(item2)?[..], &item2, None);
-        let r = recipe.unwrap();
-        assert!(r.job == 1);
-        assert!(r.name == item2);
+    #[test]
+    fn specialization() -> Result<()> {
+        let tests = [("Cloud Pearl", false), ("Hades Barding", true)];
+        for test in tests.iter() {
+            let recipe = Recipe::filter(&query_recipe(test.0)?[..], test.0, None).unwrap();
+            assert_eq!(recipe.name, test.0);
+            assert_eq!(recipe.specialist, test.1);
+        }
         Ok(())
     }
 }
