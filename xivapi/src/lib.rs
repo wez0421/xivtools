@@ -56,6 +56,7 @@ pub struct ApiRecipe {
     pub DifficultyFactor: u32,
     pub DurabilityFactor: u32,
     pub QualityFactor: u32,
+    pub IsSpecializationRequired: u32,
     pub ItemIngredient0: Option<ItemIngredient>,
     pub ItemIngredient1: Option<ItemIngredient>,
     pub ItemIngredient2: Option<ItemIngredient>,
@@ -166,6 +167,7 @@ pub fn query_recipe(item_name: &str) -> Result<Vec<ApiRecipe>, Error> {
         "ItemIngredient5",
         "Name",
         "QualityFactor",
+        "IsSpecializationRequired",
         "RecipeLevelTable",
         "GameContentLinks",
     ];
@@ -184,10 +186,11 @@ pub fn query_recipe(item_name: &str) -> Result<Vec<ApiRecipe>, Error> {
 
 #[cfg(test)]
 mod test {
-    use super::*;
+    use super::query_recipe;
+    use anyhow::Result;
 
     #[test]
-    fn basic_get_test() -> Result<(), Error> {
+    fn basic_get_test() -> Result<()> {
         let api_results = query_recipe("Rakshasa Axe")?;
         let item = &api_results[0];
         println!("item fetched: {:#?}", item);
@@ -203,7 +206,7 @@ mod test {
     }
 
     #[test]
-    fn triphane_test() -> Result<(), Error> {
+    fn triphane_test() -> Result<()> {
         let api_results = query_recipe("Triphane")?;
         let item = &api_results[0];
         println!("item fetched: {:#?}", item);
@@ -212,7 +215,7 @@ mod test {
     }
 
     #[test]
-    fn swallowskin_gloves_test() -> Result<(), Error> {
+    fn swallowskin_gloves_test() -> Result<()> {
         let names = vec![
             "Swallowskin Gloves of Fending",
             "Swallowskin Gloves of Maiming",
@@ -239,7 +242,7 @@ mod test {
     // it's a bug on the xivapi import end or ours.
     #[test]
     #[ignore]
-    fn gloves_of_aiming_test() -> Result<(), Error> {
+    fn gloves_of_aiming_test() -> Result<()> {
         let names = vec![
             "Saurian Gloves of Aiming",
             "Archaeoskin Gloves of Aiming",
@@ -270,6 +273,16 @@ mod test {
         for (i, recipe) in api_results.iter().enumerate() {
             assert_eq!(recipe.Name, names[i]);
         }
+        Ok(())
+    }
+
+    #[test]
+    fn hades_barding_specialization() -> Result<()> {
+        let name = "Hades Barding";
+        let api_results = query_recipe(name)?;
+        println!("results: {:#?}", api_results);
+        assert_eq!(api_results[0].Name, name);
+        assert_eq!(api_results[0].IsSpecializationRequired, 1);
         Ok(())
     }
 }
