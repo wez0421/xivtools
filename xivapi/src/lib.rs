@@ -190,7 +190,7 @@ mod test {
     use anyhow::Result;
 
     #[test]
-    fn basic_get_test() -> Result<()> {
+    fn basic_fetch() -> Result<()> {
         let api_results = query_recipe("Rakshasa Axe")?;
         let item = &api_results[0];
         println!("item fetched: {:#?}", item);
@@ -206,7 +206,7 @@ mod test {
     }
 
     #[test]
-    fn triphane_test() -> Result<()> {
+    fn triphane() -> Result<()> {
         let api_results = query_recipe("Triphane")?;
         let item = &api_results[0];
         println!("item fetched: {:#?}", item);
@@ -215,7 +215,7 @@ mod test {
     }
 
     #[test]
-    fn swallowskin_gloves_test() -> Result<()> {
+    fn swallowskin_gloves() -> Result<()> {
         let names = vec![
             "Swallowskin Gloves of Fending",
             "Swallowskin Gloves of Maiming",
@@ -242,7 +242,7 @@ mod test {
     // it's a bug on the xivapi import end or ours.
     #[test]
     #[ignore]
-    fn gloves_of_aiming_test() -> Result<()> {
+    fn gloves_of_aiming() -> Result<()> {
         let names = vec![
             "Saurian Gloves of Aiming",
             "Archaeoskin Gloves of Aiming",
@@ -268,7 +268,14 @@ mod test {
 
         let api_results = query_recipe("gloves of aiming")?;
 
-        println!("results: {:#?}", api_results);
+        for (i, result) in api_results.iter().enumerate() {
+            println!(
+                "\t{}  {} == {}",
+                if names[i] == result.Name { ' ' } else { 'x' },
+                names[i],
+                result.Name
+            );
+        }
         assert_eq!(api_results.len(), names.len());
         for (i, recipe) in api_results.iter().enumerate() {
             assert_eq!(recipe.Name, names[i]);
