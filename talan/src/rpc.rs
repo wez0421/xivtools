@@ -1,5 +1,6 @@
 use crate::config;
 use crate::craft;
+use crate::macros::Macro;
 use crate::recipe;
 use crate::task;
 use std::sync::mpsc::{Receiver, Sender};
@@ -14,6 +15,7 @@ pub enum Request {
     Craft {
         options: config::Options,
         tasks: Vec<task::Task>,
+        macros: Vec<Macro>,
     },
     StopCrafting,
 }
@@ -61,7 +63,7 @@ impl Worker {
         });
     }
 
-    pub fn worker_thread(&self) {
+    pub fn worker_thread(&mut self) {
         log::trace!("worker thread started");
         loop {
             if let Some(request) = self.receive() {
@@ -80,7 +82,11 @@ impl Worker {
                             count,
                         });
                     }
-                    Request::Craft { options, tasks } => {
+                    Request::Craft {
+                        options,
+                        tasks,
+                        macros,
+                    } => {
                         // Send a full status update to the main thread after completing
                         // an item.
                         let status_fn = |status: &[task::Status]| {
@@ -102,6 +108,7 @@ impl Worker {
                             craft::craft_items(
                                 handle,
                                 &options,
+                                &macros,
                                 &tasks[..],
                                 status_fn,
                                 continue_fn,

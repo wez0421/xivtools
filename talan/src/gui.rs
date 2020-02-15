@@ -1,8 +1,9 @@
 use crate::config::{self, write_config};
 use crate::lists::import_tasks_from_clipboard;
-use crate::macros::{get_macro_for_recipe, macros};
+use crate::macros::{get_macro_for_recipe, read_macros_from_file, Macro};
 use crate::rpc::{Request, Response};
 use crate::task::{Status, Task};
+use std::path::PathBuf;
 
 use gui_support;
 use imgui::*;
@@ -49,6 +50,7 @@ struct UiState {
     // The item search string.
     search_str: ImString,
     // The job dropdown selection.
+    macros: Vec<Macro>,
     search_job: usize,
     show_gear_set_window: bool,
     task_list_modification: Option<TaskListModification>,
@@ -65,6 +67,7 @@ impl Default for UiState {
                 msg: ImString::with_capacity(512),
             },
             worker: WorkerStatus::Idle,
+            macros: Vec::new(),
             craft_status: None,
             search_str: ImString::with_capacity(128),
             search_job: 0,
@@ -76,6 +79,8 @@ impl Default for UiState {
 }
 
 pub struct Gui<'a> {
+    config_path: PathBuf,
+    macro_path: PathBuf,
     state: UiState,
     job_labels: Vec<ImString>,
     rpc_tx: &'a Sender<Request>,
@@ -83,8 +88,15 @@ pub struct Gui<'a> {
 }
 
 impl<'a, 'b> Gui<'a> {
-    pub fn new(rpc_tx: &'a Sender<Request>, rpc_rx: &'a Receiver<Response>) -> Gui<'a> {
+    pub fn new(
+        config_path: PathBuf,
+        macro_path: PathBuf,
+        rpc_tx: &'a Sender<Request>,
+        rpc_rx: &'a Receiver<Response>,
+    ) -> Gui<'a> {
         Gui {
+            config_path,
+            macro_path,
             state: UiState::default(),
             job_labels: xiv::JOBS
                 .iter()
@@ -108,6 +120,18 @@ impl<'a, 'b> Gui<'a> {
             "Talan",
         );
 
+        // Load the macros and remap any tasks that need it.
+        if read_macros_from_file(&self.macro_path, &mut self.state.macros).is_ok() {
+            // Load saved tasks and re-map the macros in case the macro file changed.
+            for task in &mut config.tasks {
+                task.macro_id = get_macro_for_recipe(
+                    &self.state.macros,
+                    &task.recipe,
+                    config.options.specialist[task.recipe.job as usize],
+                );
+            }
+        }
+
         system.main_loop(|_, ui| {
             if self.state.should_exit {
                 return;
@@ -122,9 +146,8 @@ impl<'a, 'b> Gui<'a> {
                         if let Some(r) = recipe {
                             let mut task = Task::new(r, count);
                             task.macro_id = get_macro_for_recipe(
-                                task.recipe.durability,
-                                task.recipe.level,
-                                task.recipe.difficulty,
+                                &self.state.macros,
+                                &task.recipe,
                                 config.options.specialist[task.recipe.job as usize],
                             );
                             config.tasks.push(task);
@@ -226,7 +249,7 @@ impl<'a, 'b> Gui<'a> {
                     .shortcut(im_str!("Ctrl+S"))
                     .build(&ui)
                 {
-                    match write_config(None, config) {
+                    match write_config(Some(&self.config_path), config) {
                         Ok(_) => log::info!("Wrote configuration to disk."),
                         Err(e) => log::error!("Failed to write configuration: {}", e.to_string()),
                     };
@@ -247,6 +270,7 @@ impl<'a, 'b> Gui<'a> {
                         self.send_to_worker(Request::Craft {
                             options: config.options,
                             tasks: config.tasks.clone(),
+                            macros: self.state.macros.clone(),
                         });
                     }
                 }
@@ -452,7 +476,7 @@ impl<'a, 'b> Gui<'a> {
                         }
                         ui.next_column();
                         let m_labels: Vec<&ImStr> =
-                            macros().iter().map(|m| m.gui_name.as_ref()).collect();
+                            self.state.macros.iter().map(|m| m.gui_name.as_ref()).collect();
                         ComboBox::new(im_str!("Macro")).build_simple_string(
                             ui,
                             &mut task.macro_id,

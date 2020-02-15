@@ -88,7 +88,7 @@ impl Recipe {
 #[cfg(test)]
 mod test {
     use super::Recipe;
-    use anyhow::{Error, Result};
+    use anyhow::Result;
     use xivapi::query_recipe;
 
     #[test]

@@ -22,16 +22,16 @@ use structopt::StructOpt;
 struct Opts {
     /// Path to the macro file
     #[structopt(short = "m", long = "macros", default_value = "macros.toml")]
-    macros_path: PathBuf,
+    macro_path: PathBuf,
     /// Path to the config file
-    #[structopt(short = "c", long = "config", default_value = "config.json")]
+    #[structopt(short = "c", long = "config", default_value = config::DEFAULT_CONFIG_FILE)]
     config_path: PathBuf,
     /// Enable log levels (use multiple -v for more logging)
     #[structopt(short = "v", parse(from_occurrences))]
     verbose: u64,
 }
 
-fn parse_arguments() -> Result<config::Config, Error> {
+fn parse_arguments() -> Result<(PathBuf, PathBuf), Error> {
     let args = Opts::from_args();
     env_logger::Builder::from_default_env()
         .filter(
@@ -43,36 +43,17 @@ fn parse_arguments() -> Result<config::Config, Error> {
             },
         )
         .init();
-
-    if let Err(e) = macros::from_path(&args.macros_path) {
-        log::error!(
-            "Failed to read macros from '{}': {}",
-            &args.macros_path.to_str().unwrap(),
-            e.to_string(),
-        );
-        std::process::exit(1);
-    }
-
-    let mut cfg = config::get_config(Some(&args.config_path));
-    for task in &mut cfg.tasks {
-        task.macro_id = macros::get_macro_for_recipe(
-            task.recipe.durability,
-            task.recipe.level,
-            task.recipe.difficulty,
-            cfg.options.specialist[task.recipe.job as usize],
-        );
-    }
-
-    Ok(cfg)
+    Ok((args.config_path, args.macro_path))
 }
 
 fn main() -> Result<(), Error> {
-    let mut cfg = parse_arguments()?;
+    let (config_path, macros_path) = parse_arguments()?;
+    let mut cfg = config::get_config(Some(&config_path));
     let (client_tx, worker_rx): (Sender<Request>, Receiver<Request>) = channel();
     let (worker_tx, client_rx): (Sender<Response>, Receiver<Response>) = channel();
     thread::spawn(move || Worker::new(worker_rx, worker_tx).worker_thread());
 
-    let mut gui = gui::Gui::new(&client_tx, &client_rx);
+    let mut gui = gui::Gui::new(config_path, macros_path, &client_tx, &client_rx);
     gui.start(&mut cfg);
 
     println!("exiting...");

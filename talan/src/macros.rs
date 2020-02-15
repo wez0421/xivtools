@@ -1,9 +1,9 @@
 use crate::action::{Action, ACTIONS};
-use anyhow::{Result, anyhow};
+use crate::recipe;
+use anyhow::{anyhow, Result};
 use imgui::ImString;
-use once_cell::sync::OnceCell;
 use serde::Deserialize;
-use std::path::Path;
+use std::path::PathBuf;
 
 // The |Toml| variant structures are used entirely for deserializing
 // from a user friendly format into the actions necessary for Talan.
@@ -23,7 +23,7 @@ pub struct MacroFileToml {
     pub xiv_macro: Vec<MacroToml>,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Macro {
     pub name: String,
     pub gui_name: ImString,
@@ -33,40 +33,6 @@ pub struct Macro {
     pub difficulty: Option<u32>,
     pub specialist: bool,
     pub actions: Vec<&'static Action>,
-}
-
-static MACROS: OnceCell<Vec<Macro>> = OnceCell::new();
-
-pub fn macros() -> &'static Vec<Macro> {
-    MACROS.get().expect("Macros have not been initialized")
-}
-
-pub fn from_path(path: &Path) -> Result<()> {
-    from_str(&std::fs::read_to_string(path)?)
-}
-
-pub fn from_str(s: &str) -> Result<()> {
-    let des = toml::from_str::<MacroFileToml>(s)?;
-    let mut parsed_vec: Vec<Macro> = Vec::new();
-    for macro_toml in &des.xiv_macro {
-        parsed_vec.push(Macro {
-            name: macro_toml.name.clone(),
-            gui_name: ImString::new(macro_toml.name.clone()),
-            durability: macro_toml.durability.clone(),
-            max_rlvl: macro_toml.max_rlvl,
-            min_rlvl: macro_toml.min_rlvl,
-            difficulty: macro_toml.difficulty,
-            specialist: if let Some(spec) = macro_toml.specialist {
-                spec
-            } else {
-                false
-            },
-            actions: parse_buffer(&macro_toml.actions)?,
-        });
-    }
-
-    MACROS.set(parsed_vec).expect("couldn't set up macro cache");
-    Ok(())
 }
 
 // Attempts to parse macros in |buffer| and return a list of actions.
@@ -82,6 +48,32 @@ fn parse_buffer(buffer: &str) -> Result<Vec<&'static Action>> {
     }
 
     Ok(actions)
+}
+
+pub fn read_macros_from_buffer(buffer: &str, out_vec: &mut Vec<Macro>) -> Result<()> {
+    let des = toml::from_str::<MacroFileToml>(buffer)?;
+    for macro_toml in &des.xiv_macro {
+        out_vec.push(Macro {
+            name: macro_toml.name.clone(),
+            gui_name: ImString::new(macro_toml.name.clone()),
+            durability: macro_toml.durability.clone(),
+            max_rlvl: macro_toml.max_rlvl,
+            min_rlvl: macro_toml.min_rlvl,
+            difficulty: macro_toml.difficulty,
+            specialist: if let Some(spec) = macro_toml.specialist {
+                spec
+            } else {
+                false
+            },
+            actions: parse_buffer(&macro_toml.actions)?,
+        });
+    }
+
+    Ok(())
+}
+
+pub fn read_macros_from_file(path: &PathBuf, out_vec: &mut Vec<Macro>) -> Result<()> {
+    read_macros_from_buffer(&std::fs::read_to_string(path)?, out_vec)
 }
 
 // Extract the action for a given line in a macro. Returns a
@@ -120,72 +112,82 @@ pub fn parse_line(line: &str) -> Result<&'static Action> {
     }
 }
 
-// Picks the most appropriate macro for a given set of recipe values. If none
-// are found matching the durability then it will choose the last macro.
-pub fn get_macro_for_recipe(
-    durability: u32,
-    rlvl: u32,
-    difficulty: u32,
-    specialist: bool,
-) -> usize {
-    for (i, m) in macros().iter().enumerate() {
-        if let Some(m_min) = m.min_rlvl {
-            if m_min > rlvl {
-                log::trace!("\"{}\": m_min {} > rlvl {}", m.name, m_min, rlvl);
-                continue;
-            }
-        }
-
-        if let Some(m_max) = m.max_rlvl {
-            if m_max < rlvl {
-                log::trace!("\"{}\": m_max {} < rlvl {}", m.name, m_max, rlvl);
-                continue;
-            }
-        }
-
-        // Match on difficulty if it exists
-        if let Some(m_difficulty) = m.difficulty {
-            if m_difficulty != difficulty {
+// Determine the best macro available for a given recipe. If no match is found,
+// return the first macro. Best match is determined by picking the macro who has
+// the most matching parameters specified in the macro definition.
+pub fn get_macro_for_recipe(macros: &[Macro], recipe: &recipe::Recipe, specialist: bool) -> usize {
+    let mut best_pick = None;
+    let mut best_match_cnt = 0;
+    log::trace!("Selecting macro for \"{}\"", recipe.name);
+    for (i, mcro) in macros.iter().enumerate() {
+        let mut match_cnt = 0;
+        if let Some(min_rlvl) = mcro.min_rlvl {
+            if min_rlvl > recipe.level {
                 log::trace!(
-                    "\"{}\": m_difficulty {} != difficulty {}",
-                    m.name,
-                    m_difficulty,
-                    difficulty
+                    "\t[{}] macro minimum level {} > recipe level {}",
+                    mcro.name,
+                    min_rlvl,
+                    recipe.level,
                 );
                 continue;
             }
+            match_cnt += 1;
         }
 
-        if m.specialist && m.specialist != specialist {
-            log::trace!(
-                "\"{}\": m_specialist {} != specialist {}",
-                m.name,
-                m.specialist,
-                specialist
-            );
+        if let Some(max_rlvl) = mcro.max_rlvl {
+            if max_rlvl < recipe.level {
+                log::trace!(
+                    "\t[{}] macro maximum level {} < recipe level {}",
+                    mcro.name,
+                    max_rlvl,
+                    recipe.level,
+                );
+                continue;
+            }
+            match_cnt += 1;
+        }
+
+        // Match on difficulty if it exists
+        if let Some(difficulty) = mcro.difficulty {
+            if difficulty != recipe.difficulty {
+                log::trace!("\t[{}] macro difficulty doesn't match", mcro.name,);
+                continue;
+            }
+            match_cnt += 1;
+        }
+
+        if mcro.specialist {
+            if mcro.specialist != specialist {
+                log::trace!("\t[{}] macro speciality doesn't match", mcro.name,);
+                continue;
+            }
+            match_cnt += 1;
+        }
+
+        if !mcro.durability.iter().any(|&d| d == recipe.durability) {
+            log::trace!("\t[{}] macro durability doesn't match", mcro.name);
             continue;
         }
+        match_cnt += 1;
 
-        // At this point check if the recipe durability exists in the macro's
-        // durability list.
-        if m.durability.iter().any(|&d| d == durability) {
-            return i;
+        if match_cnt > best_match_cnt {
+            best_match_cnt = match_cnt;
+            best_pick = Some(i);
         }
+        log::trace!("\t[{}] score = {}", mcro.name, match_cnt);
     }
-    macros().len() - 1
+
+    if best_pick.is_none() {
+        log::error!("No suitable macro found for \"{}\"", recipe.name);
+    }
+    best_pick.unwrap_or(0)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    const TEST_MACRO_BUFFER: &str = r#"
-        /ac "Inner Quiet" <wait.2>
-        /ac "Great Strides" <wait.2>
-        /ac "Manipulation" <wait.3>
-        /ac "Byregot's Blessing" <wait.3>
-        #/ac "Commented Action" <wait.1>
-        /ac "Careful Synthesis" <wait.3>"#;
+    use super::{parse_line, MacroFileToml};
+    use crate::action::ACTIONS;
+    use crate::recipe::Recipe;
 
     const TEST_MACRO_TOML: &str = r#"
         [[xiv_macro]]
@@ -224,16 +226,33 @@ mod tests {
             actions = """"""
         "#;
 
-        let m = super::from_str(MACRO_BUFFER);
-        if !m.is_ok() {
-            println!("m failure: {:#?}", m);
-        }
-        assert!(m.is_ok());
-        assert!(super::get_macro_for_recipe(35, 0, 0, false) == 0);
-        assert!(super::get_macro_for_recipe(40, 0, 0, false) == 2);
-        assert!(super::get_macro_for_recipe(60, 0, 0, false) == 0);
-        assert!(super::get_macro_for_recipe(70, 0, 0, false) == 2);
-        assert!(super::get_macro_for_recipe(80, 0, 0, false) == 1);
+        let recipe_35 = Recipe {
+            durability: 35,
+            difficulty: 0,
+            quality: 0,
+            level: 0,
+            specialist: false,
+            id: 0,
+            index: 0,
+            job: 0,
+            mats: Vec::new(),
+            name: "35".to_string(),
+        };
+        let mut recipe_40 = recipe_35.clone();
+        let mut recipe_60 = recipe_35.clone();
+        let mut recipe_70 = recipe_35.clone();
+        let mut recipe_80 = recipe_35.clone();
+        recipe_40.durability = 40;
+        recipe_60.durability = 60;
+        recipe_70.durability = 70;
+        recipe_80.durability = 80;
+        let mut macros = Vec::new();
+        assert!(super::read_macros_from_buffer(MACRO_BUFFER, &mut macros).is_ok());
+        assert!(super::get_macro_for_recipe(&macros, &recipe_35, false) == 0);
+        assert!(super::get_macro_for_recipe(&macros, &recipe_40, false) == 2);
+        assert!(super::get_macro_for_recipe(&macros, &recipe_60, false) == 0);
+        assert!(super::get_macro_for_recipe(&macros, &recipe_70, false) == 2);
+        assert!(super::get_macro_for_recipe(&macros, &recipe_80, false) == 1);
     }
 
     #[test]
@@ -290,40 +309,27 @@ mod tests {
         assert_eq!(result.is_err(), true);
     }
 
+    const TEST_MACRO_BUFFER: &str = r#"
+        /ac "Inner Quiet" <wait.2>
+        /ac "Great Strides" <wait.2>
+        /ac "Manipulation" <wait.3>
+        /ac "Byregot's Blessing" <wait.3>
+        #/ac "Commented Action" <wait.1>
+        /ac "Careful Synthesis" <wait.3>"#;
+
     #[test]
     fn macros_buffer() -> anyhow::Result<()> {
-        let actual = parse_buffer(TEST_MACRO_BUFFER)?;
-        assert_eq!(validate_test_entries(actual), true);
-        Ok(())
-    }
-
-    fn validate_test_entries(actual: Vec<&Action>) -> bool {
         let expected = [
-            Action {
-                name: "Inner Quiet",
-                wait_ms: 1500,
-            },
-            Action {
-                name: "Great Strides",
-                wait_ms: 1500,
-            },
-            Action {
-                name: "Manipulation",
-                wait_ms: 1500,
-            },
-            Action {
-                name: "Byregot's Blessing",
-                wait_ms: 2500,
-            },
-            Action {
-                name: "Careful Synthesis",
-                wait_ms: 2500,
-            },
+            &ACTIONS.get("inner quiet").unwrap(),
+            &ACTIONS.get("great strides").unwrap(),
+            &ACTIONS.get("manipulation").unwrap(),
+            &ACTIONS.get("byregot's blessing").unwrap(),
+            &ACTIONS.get("careful synthesis").unwrap(),
         ];
-
-        for (left, &right) in expected.iter().zip(actual.iter()) {
+        let actual = super::parse_buffer(TEST_MACRO_BUFFER)?;
+        for (&left, right) in expected.iter().zip(actual.iter()) {
             assert_eq!(left, right);
         }
-        true
+        Ok(())
     }
 }

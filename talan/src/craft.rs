@@ -1,7 +1,7 @@
 //use crate::role_actions::RoleActions;
 use crate::action::Action;
 use crate::config::Options;
-use crate::macros::macros;
+use crate::macros::Macro;
 use crate::task;
 use log;
 use std::thread::sleep;
@@ -24,6 +24,7 @@ pub fn find_swap_gear_set(avoid: u32, gear_sets: &[i32]) -> Option<i32> {
 pub fn craft_items<'a, F, S>(
     mut handle: xiv::XivHandle,
     options: &'a Options,
+    macros: &[Macro],
     tasks: &[task::Task],
     mut status_fn: F,
     mut continue_fn: S,
@@ -101,7 +102,7 @@ pub fn craft_items<'a, F, S>(
                 task.quantity
             );
             // Time to craft the items
-            execute_task(handle, &task, &macros()[task.macro_id as usize].actions[..]);
+            execute_task(handle, &task, &macros[task.macro_id as usize].actions[..]);
             {
                 status[i].finished += 1;
             }
