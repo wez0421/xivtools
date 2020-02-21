@@ -28,13 +28,6 @@ lazy_static::lazy_static! {
                 wait_ms: 1500
             }
         );
-        h.insert("ingenuity",
-            Action {
-                name: "Ingenuity",
-                gui_name: im_str!("Ingenuity"),
-                wait_ms: 1500
-            }
-        );
         h.insert("inner quiet",
             Action {
                 name: "Inner Quiet",
@@ -56,13 +49,6 @@ lazy_static::lazy_static! {
                 wait_ms: 1500
             }
         );
-        h.insert("reuse",
-            Action {
-                name: "Reuse",
-                gui_name: im_str!("Reuse"),
-                wait_ms: 1500
-            }
-        );
         h.insert("waste not ii",
             Action {
                 name: "Waste Not II",
@@ -74,6 +60,13 @@ lazy_static::lazy_static! {
             Action {
                 name: "Waste Not",
                 gui_name: im_str!("Waste Not"),
+                wait_ms: 1500
+            }
+        );
+        h.insert("veneration",
+            Action {
+                name: "Veneration",
+                gui_name: im_str!("Veneration"),
                 wait_ms: 1500
             }
         );
@@ -103,6 +96,13 @@ lazy_static::lazy_static! {
             Action {
                 name: "Focused Synthesis",
                 gui_name: im_str!("Focused Synthesis"),
+                wait_ms: 2500
+            }
+        );
+        h.insert("groundwork",
+            Action {
+                name: "Groundwork",
+                gui_name: im_str!("Groundwork"),
                 wait_ms: 2500
             }
         );
