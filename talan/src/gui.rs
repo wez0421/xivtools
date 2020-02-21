@@ -121,15 +121,18 @@ impl<'a, 'b> Gui<'a> {
         );
 
         // Load the macros and remap any tasks that need it.
-        if read_macros_from_file(&self.macro_path, &mut self.state.macros).is_ok() {
-            // Load saved tasks and re-map the macros in case the macro file changed.
-            for task in &mut config.tasks {
-                task.macro_id = get_macro_for_recipe(
-                    &self.state.macros,
-                    &task.recipe,
-                    config.options.specialist[task.recipe.job as usize],
-                );
+        match read_macros_from_file(&self.macro_path, &mut self.state.macros) {
+            Ok(()) => {
+                // Load saved tasks and re-map the macros in case the macro file changed.
+                for task in &mut config.tasks {
+                    task.macro_id = get_macro_for_recipe(
+                        &self.state.macros,
+                        &task.recipe,
+                        config.options.specialist[task.recipe.job as usize],
+                    );
+                }
             }
+            Err(e) => log::error!("Failed to read macros: {}", e),
         }
 
         system.main_loop(|_, ui| {
