@@ -170,6 +170,13 @@ lazy_static::lazy_static! {
                 wait_ms: 2500
             }
         );
+        h.insert("preparatory touch",
+            Action {
+                name: "Preparatory Touch",
+                gui_name: im_str!("Preparatory Touch"),
+                wait_ms: 2500
+            }
+        );
         h.insert("prudent touch",
             Action {
                 name: "Prudent Touch",
