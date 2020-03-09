@@ -129,7 +129,7 @@ mod test {
 
     #[test]
     fn specialization() -> Result<()> {
-        let tests = [("Cloud Pearl", false), ("Hades Barding", true)];
+        let tests = [("Cloud Pearl", false), ("Ruby Barding", true)];
         for test in tests.iter() {
             let recipe = Recipe::filter(&query_recipe(test.0)?[..], test.0, None).unwrap();
             assert_eq!(recipe.name, test.0);

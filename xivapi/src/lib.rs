@@ -284,12 +284,16 @@ mod test {
     }
 
     #[test]
-    fn hades_barding_specialization() -> Result<()> {
-        let name = "Hades Barding";
-        let api_results = query_recipe(name)?;
-        println!("results: {:#?}", api_results);
-        assert_eq!(api_results[0].Name, name);
-        assert_eq!(api_results[0].IsSpecializationRequired, 1);
+    fn recipe_specialization() -> Result<()> {
+        let inputs = [("Ruby Barding", 1), ("Hades Barding", 0)];
+
+        for input in &inputs {
+            let api_results = query_recipe(input.0)?;
+            assert_eq!(input.0, api_results[0].Name);
+            assert_eq!(input.1, api_results[0].IsSpecializationRequired);
+        }
+        Ok(())
+    }
         Ok(())
     }
 }
