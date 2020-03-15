@@ -15,7 +15,7 @@ struct Opts {
     #[structopt(short = "s", long = "slow")]
     use_slow_navigation: bool,
 
-    /// The index of retainers to send on ventures.
+    /// The index of retainers to send on ventures. Up to 9 retainers are supported.
     /// Retainers can be specified by ranges denoted by a hyphen, or individuals
     /// separated by commas. Ranges must be low to high.
     ///
@@ -52,6 +52,8 @@ struct Opts {
     r7_period: Option<u64>,
     #[structopt(short = "8")]
     r8_period: Option<u64>,
+    #[structopt(short = "9")]
+    r9_period: Option<u64>,
 
     /// Enable log levels.
     #[structopt(short = "v", parse(from_occurrences))]
@@ -90,6 +92,7 @@ fn retainer_id_to_period(id: u64, args: &Opts) -> u64 {
         6 => args.r6_period.unwrap_or(DEFAULT_PERIOD),
         7 => args.r7_period.unwrap_or(DEFAULT_PERIOD),
         8 => args.r8_period.unwrap_or(DEFAULT_PERIOD),
+        9 => args.r9_period.unwrap_or(DEFAULT_PERIOD),
         _ => panic!("Unknown ID"),
     }
 }
