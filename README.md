@@ -34,18 +34,13 @@ Talan is in its first beta, but already has a fairly solid set of features
 - The XIV UI is fininky, so it's best to run the game in windowed mode and minimize it before starting a run
   of tasks to ensure you can't mistakenly alter the modality of the game's UI. Even moving the mouse over
   the window can interrupt the game's idea of which input method is being used.
-- Talan will look in $the current working directory for a directory named `macros` to search for macros.
-  If the `macros` directory doesn't exist then you'll experience a crash.
 - **If you are crafting collectables you must make sure your last action finishes the craft. Additional actions will presently cause the window input to fail. Sim your rotations!**
 
 ### Roadmap
 Talan is still under active development with the following roadmap in mind:
-- Configuring Role Actions if they are found in a macro. (possibly unnecessary in Shadowbringers)
-- Automatically adding prereq crafts to the list.
 - Caching item searches, or having a local item database, so that we can run if XIVApi is down.
 - Using and refreshing crafter food.
 - Using and refreshing crafter tea.
-- Adding a progress bar / window for the GUI rather than dropping to console.
 
 ### Usage
 Talan is largely controlled via the GUI. Run with -v or -vv for various amounts of debug info.
