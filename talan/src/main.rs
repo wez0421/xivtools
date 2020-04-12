@@ -48,6 +48,8 @@ fn parse_arguments() -> Result<(PathBuf, PathBuf), Error> {
 
 fn main() -> Result<(), Error> {
     let (config_path, macros_path) = parse_arguments()?;
+    log::debug!("config file: {:?}", config_path);
+    log::debug!("macros file: {:?}", macros_path);
     let mut cfg = config::get_config(Some(&config_path));
     let (client_tx, worker_rx): (Sender<Request>, Receiver<Request>) = channel();
     let (worker_tx, client_rx): (Sender<Response>, Receiver<Response>) = channel();

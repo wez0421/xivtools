@@ -54,6 +54,7 @@ struct UiState {
     search_job: usize,
     show_gear_set_window: bool,
     task_list_modification: Option<TaskListModification>,
+    should_load_macros: bool,
     should_exit: bool,
 }
 
@@ -73,6 +74,7 @@ impl Default for UiState {
             search_job: 0,
             show_gear_set_window: false,
             task_list_modification: None,
+            should_load_macros: false,
             should_exit: false,
         }
     }
@@ -120,25 +122,32 @@ impl<'a, 'b> Gui<'a> {
             "Talan",
         );
 
-        // Load the macros and remap any tasks that need it.
-        match read_macros_from_file(&self.macro_path, &mut self.state.macros) {
-            Ok(()) => {
-                // Load saved tasks and re-map the macros in case the macro file changed.
-                for task in &mut config.tasks {
-                    task.macro_id = get_macro_for_recipe(
-                        &self.state.macros,
-                        &task.recipe,
-                        config.options.specialist[task.recipe.job as usize],
-                    );
-                }
-            }
-            Err(e) => log::error!("Failed to read macros: {}", e),
-        }
-
+        // Always load macros on the first frame.
+        self.state.should_load_macros = true;
         system.main_loop(|run, ui| {
             if self.state.should_exit {
                 *run = false;
                 return;
+            }
+
+            // If necessary, macros are loaded from the file before the next frame.
+            if self.state.should_load_macros {
+                // Load the macros and remap any tasks that need it.
+                self.state.macros.clear();
+                match read_macros_from_file(&self.macro_path, &mut self.state.macros) {
+                    Ok(()) => {
+                        // Load saved tasks and re-map the macros in case the macro file changed.
+                        for task in &mut config.tasks {
+                            task.macro_id = get_macro_for_recipe(
+                                &self.state.macros,
+                                &task.recipe,
+                                config.options.specialist[task.recipe.job as usize],
+                            );
+                        }
+                    }
+                    Err(e) => log::error!("Failed to load macros: {}", e),
+                }
+                self.state.should_load_macros = false;
             }
 
             // Most operations (recipe queries, crafting, etc) are handled by
@@ -250,26 +259,21 @@ impl<'a, 'b> Gui<'a> {
         if let Some(main_menu) = ui.begin_main_menu_bar() {
             self.state.previous_window_size = ui.window_size();
             if let Some(menu) = ui.begin_menu(im_str!("File"), true) {
-                if MenuItem::new(im_str!("Save All"))
-                    .shortcut(im_str!("Ctrl+S"))
-                    .build(&ui)
-                {
+                if MenuItem::new(im_str!("Reload Macros")).build(&ui) {
+                    self.state.should_load_macros = true;
+                }
+                if MenuItem::new(im_str!("Save All")).build(&ui) {
                     match write_config(Some(&self.config_path), config) {
                         Ok(_) => log::info!("Wrote configuration to disk."),
                         Err(e) => log::error!("Failed to write configuration: {}", e.to_string()),
                     };
                 }
                 ui.separator();
-                MenuItem::new(im_str!("Exit"))
-                    .shortcut(im_str!("Ctrl+Q"))
-                    .build_with_ref(&ui, &mut self.state.should_exit);
+                MenuItem::new(im_str!("Exit")).build_with_ref(&ui, &mut self.state.should_exit);
                 menu.end(ui);
             }
             if let Some(menu) = ui.begin_menu(im_str!("Tasks"), true) {
-                if MenuItem::new(im_str!("Craft All"))
-                    .shortcut(im_str!("F5"))
-                    .build(&ui)
-                {
+                if MenuItem::new(im_str!("Craft All")).build(&ui) {
                     // Get clippy to leave us alone about collapsing the if
                     if Gui::check_gear_sets(&mut self.state, config) {
                         self.send_to_worker(Request::Craft {
@@ -279,10 +283,7 @@ impl<'a, 'b> Gui<'a> {
                         });
                     }
                 }
-                if MenuItem::new(im_str!("Import From Clipboard"))
-                    .shortcut(im_str!("Ctrl+I"))
-                    .build(&ui)
-                {
+                if MenuItem::new(im_str!("Import From Clipboard")).build(&ui) {
                     if let Ok(items) = import_tasks_from_clipboard() {
                         for i in &items {
                             log::debug!("item: {:#?}", i);
@@ -295,10 +296,7 @@ impl<'a, 'b> Gui<'a> {
                     }
                 }
                 ui.separator();
-                if MenuItem::new(im_str!("Clear Tasks"))
-                    .shortcut(im_str!("Ctrl+W"))
-                    .build(&ui)
-                {
+                if MenuItem::new(im_str!("Clear Tasks")).build(&ui) {
                     config.tasks.clear();
                 }
                 menu.end(ui);

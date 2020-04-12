@@ -53,6 +53,7 @@ fn parse_buffer(buffer: &str) -> Result<Vec<&'static Action>> {
 pub fn read_macros_from_buffer(buffer: &str, out_vec: &mut Vec<Macro>) -> Result<()> {
     let des = toml::from_str::<MacroFileToml>(buffer)?;
     for macro_toml in &des.xiv_macro {
+        log::debug!("loaded '{}'", macro_toml.name);
         out_vec.push(Macro {
             name: macro_toml.name.clone(),
             gui_name: ImString::new(macro_toml.name.clone()),
