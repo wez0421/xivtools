@@ -3,7 +3,7 @@ use anyhow::{Error, Result};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, Default)]
+#[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct Options {
     // Stored as i32 because imgui doesn't bind to unsigned ints.
     #[serde(default)]
@@ -16,6 +16,21 @@ pub struct Options {
     pub use_slow_dialog_navigation: bool,
     #[serde(default)]
     pub should_clear_window_on_craft: bool,
+    #[serde(default)]
+    pub remove_finished_tasks: bool,
+}
+
+impl Default for Options {
+    fn default() -> Self {
+        Options {
+            gear: [0; xiv::JOB_CNT],
+            specialist: [false; xiv::JOB_CNT],
+            swap_job_before_tasks: false,
+            use_slow_dialog_navigation: false,
+            should_clear_window_on_craft: true,
+            remove_finished_tasks: true,
+        }
+    }
 }
 
 // Placeholder.

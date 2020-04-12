@@ -18,6 +18,7 @@ pub struct Task {
     pub mat_quality: Vec<MaterialCount>,
     pub quantity: u32, // number of items to craft
     pub recipe: Recipe,
+    #[serde(default)]
     pub estimate: u32,
 }
 

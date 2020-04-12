@@ -186,6 +186,24 @@ impl<'a, 'b> Gui<'a> {
                         self.state.craft_status = Some(status);
                     }
                     Response::EOW => {
+                        // prune any completed tasks.
+                        if config.options.remove_finished_tasks {
+                            if let Some(status) = &self.state.craft_status {
+                                for i in 0..config.tasks.len() {
+                                    if status[i].finished > 0 {
+                                        log::debug!(
+                                            "Marking {}x in '{}' as complete",
+                                            status[i].finished,
+                                            config.tasks[i].recipe.name
+                                        );
+                                        config.tasks[i].quantity -= status[i].finished;
+                                        config.tasks[i].update_estimate(&self.state.macros);
+                                    }
+                                }
+                            }
+                            config.tasks.retain(|t| t.quantity > 0);
+                        }
+
                         self.state.worker = WorkerStatus::Idle;
                         self.state.craft_status = None;
                     }
@@ -314,6 +332,13 @@ impl<'a, 'b> Gui<'a> {
                 {
                     config.options.should_clear_window_on_craft =
                         !config.options.should_clear_window_on_craft;
+                    if MenuItem::new(im_str!("Remove completed tasks after craft"))
+                        .selected(config.options.remove_finished_tasks)
+                        .build(ui)
+                    {
+                        config.options.remove_finished_tasks =
+                            !config.options.remove_finished_tasks;
+                    }
                 }
                 if MenuItem::new(im_str!("Use Slow Dialog Navigation"))
                     .selected(config.options.use_slow_dialog_navigation)
