@@ -37,9 +37,9 @@ fn parse_arguments() -> Result<(PathBuf, PathBuf), Error> {
         .filter(
             Some("talan"),
             match args.verbose {
+                0 => log::LevelFilter::Info,
                 1 => log::LevelFilter::Debug,
-                2 => log::LevelFilter::Trace,
-                _ => log::LevelFilter::Info,
+                _ => log::LevelFilter::Trace,
             },
         )
         .init();
