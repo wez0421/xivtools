@@ -135,8 +135,9 @@ impl<'a, 'b> Gui<'a> {
             Err(e) => log::error!("Failed to read macros: {}", e),
         }
 
-        system.main_loop(|_, ui| {
+        system.main_loop(|run, ui| {
             if self.state.should_exit {
+                *run = false;
                 return;
             }
 
