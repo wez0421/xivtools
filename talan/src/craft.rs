@@ -21,16 +21,16 @@ pub fn find_swap_gear_set(avoid: u32, gear_sets: &[i32]) -> Option<i32> {
 }
 
 // Craft all the configured tasks and update the client by way of |status_callback|.
-pub fn craft_items<'a, F, S>(
+pub fn craft_items<'a, S, C>(
     mut handle: xiv::XivHandle,
     options: &'a Options,
     macros: &[Macro],
     tasks: &[task::Task],
-    mut status_fn: F,
-    mut continue_fn: S,
+    mut status_fn: S,
+    mut continue_fn: C,
 ) where
-    F: FnMut(&[task::Status]),
-    S: FnMut() -> bool,
+    S: FnMut(&[task::Status]),
+    C: FnMut() -> bool,
 {
     // Initialize the crafting status and send an initialize slice
     // so the UI knows what to start rendering.
@@ -55,7 +55,6 @@ pub fn craft_items<'a, F, S>(
         }
     }
 
-    let mut stop: bool = false;
     for (i, task) in tasks.iter().enumerate() {
         log::trace!("Task: {:?}", task);
         let task_job: usize = task.recipe.job as usize;
@@ -89,12 +88,6 @@ pub fn craft_items<'a, F, S>(
         select_recipe(handle, &task);
         select_materials(handle, &task);
         for task_index in 1..=task.quantity {
-            if !continue_fn() {
-                log::info!("Received stop order");
-                stop = true;
-                break;
-            }
-
             log::info!(
                 "crafting {} {}/{}",
                 task.recipe.name,
@@ -102,11 +95,18 @@ pub fn craft_items<'a, F, S>(
                 task.quantity
             );
             // Time to craft the items
-            execute_task(handle, &task, &macros[task.macro_id as usize].actions[..]);
+            if !continue_fn()
+                || !execute_task(
+                    handle,
+                    &task,
+                    &macros[task.macro_id as usize].actions[..],
+                    &mut continue_fn,
+                )
             {
-                status[i].finished += 1;
+                log::info!("Received stop order");
+                return;
             }
-
+            status[i].finished += 1;
             status_fn(&status[..]);
             // Check if we received a message to stop from the main thread.
             ui::wait(2.0);
@@ -117,10 +117,6 @@ pub fn craft_items<'a, F, S>(
 
         if task.is_collectable {
             toggle_collectable(handle);
-        }
-
-        if stop {
-            break;
         }
     }
 }
@@ -223,7 +219,15 @@ pub fn select_materials(handle: xiv::XivHandle, task: &task::Task) {
     }
 }
 
-fn execute_task(handle: xiv::XivHandle, task: &task::Task, actions: &[&'static Action]) {
+fn execute_task<C>(
+    handle: xiv::XivHandle,
+    task: &task::Task,
+    actions: &[&'static Action],
+    continue_fn: &mut C,
+) -> bool
+where
+    C: FnMut() -> bool,
+{
     // If we're at the start of a task we will already have the Synthesize button
     // selected with the pointer.
     ui::press_confirm(handle);
@@ -233,6 +237,10 @@ fn execute_task(handle: xiv::XivHandle, task: &task::Task, actions: &[&'static A
     let mut next_action = Instant::now() + Duration::from_secs(2);
     let mut prev_action = next_action;
     for action in actions {
+        if !continue_fn() {
+            return false;
+        }
+
         ui::press_enter(handle);
         ui::send_string(handle, &format!("/ac \"{}\"", &action.name));
         // At this point the action is queued in the text buffer, so we can
@@ -248,6 +256,10 @@ fn execute_task(handle: xiv::XivHandle, task: &task::Task, actions: &[&'static A
         log::debug!("action: {} ({:?})", action.name, now - prev_action);
         prev_action = now;
         next_action = now + Duration::from_millis(action.wait_ms + GCD_PADDING);
+    }
+
+    if !continue_fn() {
+        return false;
     }
 
     // Wait for the last GCD to finish
@@ -270,6 +282,7 @@ fn execute_task(handle: xiv::XivHandle, task: &task::Task, actions: &[&'static A
     // Give the UI a moment before pressing confirm to highlight the recipe again
     ui::wait(3.0);
     ui::press_confirm(handle);
+    true
 }
 
 fn send_action(handle: xiv::XivHandle, action: &str) {

@@ -332,13 +332,12 @@ impl<'a, 'b> Gui<'a> {
                 {
                     config.options.should_clear_window_on_craft =
                         !config.options.should_clear_window_on_craft;
-                    if MenuItem::new(im_str!("Remove completed tasks after craft"))
-                        .selected(config.options.remove_finished_tasks)
-                        .build(ui)
-                    {
-                        config.options.remove_finished_tasks =
-                            !config.options.remove_finished_tasks;
-                    }
+                }
+                if MenuItem::new(im_str!("Remove completed tasks after craft"))
+                    .selected(config.options.remove_finished_tasks)
+                    .build(ui)
+                {
+                    config.options.remove_finished_tasks = !config.options.remove_finished_tasks;
                 }
                 if MenuItem::new(im_str!("Use Slow Dialog Navigation"))
                     .selected(config.options.use_slow_dialog_navigation)
