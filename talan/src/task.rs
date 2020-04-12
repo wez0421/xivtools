@@ -1,3 +1,4 @@
+use crate::macros::Macro;
 use crate::recipe::Recipe;
 use serde::{Deserialize, Serialize};
 
@@ -17,6 +18,7 @@ pub struct Task {
     pub mat_quality: Vec<MaterialCount>,
     pub quantity: u32, // number of items to craft
     pub recipe: Recipe,
+    pub estimate: u32,
 }
 
 impl Task {
@@ -32,7 +34,18 @@ impl Task {
                 .map(|m| MaterialCount { nq: m.count, hq: 0 })
                 .collect(),
             recipe,
+            estimate: 0,
         }
+    }
+
+    pub fn update_estimate(&mut self, macros: &[Macro]) {
+        // 5 extra seconds of padding per craft is to conservatively cover the UI navigation per item.
+        self.estimate = self.quantity
+            * (macros[self.macro_id]
+                .actions
+                .iter()
+                .fold(0, |acc, action| acc + action.wait_ms) as u32
+                + 5000);
     }
 }
 

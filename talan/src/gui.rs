@@ -164,6 +164,7 @@ impl<'a, 'b> Gui<'a> {
                                 &task.recipe,
                                 config.options.specialist[task.recipe.job as usize],
                             );
+                            task.update_estimate(&self.state.macros);
                             config.tasks.push(task);
                         } else {
                             let msg = &format!(
@@ -443,6 +444,12 @@ impl<'a, 'b> Gui<'a> {
                 // Both Tasks and their materials are enumerated so we can generate unique
                 // UI ids for widgets and prevent any sort of UI clash.
                 let task_count = config.tasks.len();
+                if task_count > 0 {
+                    let total_ttc = config.tasks.iter().fold(0, |acc, t| acc + t.estimate);
+                    let ttc_min = total_ttc / 60000;
+                    let ttc_sec = (total_ttc - (ttc_min * 60000)) / 1000;
+                    ui.text_disabled(format!("Estimated time to craft all tasks: {}m{}s", ttc_min, ttc_sec));
+                }
                 for (task_id, mut task) in &mut config.tasks.iter_mut().enumerate() {
                     let id = ui.push_id(task_id as i32);
                     let header_name = ImString::new(format!(
@@ -458,7 +465,7 @@ impl<'a, 'b> Gui<'a> {
                         task.recipe.level,
                         task.recipe.durability,
                         task.recipe.difficulty,
-                        task.recipe.quality
+                        task.recipe.quality,
                     ));
                     if ui
                         .collapsing_header(&header_name)
@@ -476,15 +483,18 @@ impl<'a, 'b> Gui<'a> {
                         let mut q: i32 = task.quantity as i32;
                         if ui.input_int(im_str!("#"), &mut q).build() {
                             task.quantity = max(1, q as u32);
+                            task.update_estimate(&self.state.macros);
                         }
                         ui.next_column();
                         let m_labels: Vec<&ImStr> =
                             self.state.macros.iter().map(|m| m.gui_name.as_ref()).collect();
-                        ComboBox::new(im_str!("Macro")).build_simple_string(
+                        if ComboBox::new(im_str!("Macro")).build_simple_string(
                             ui,
                             &mut task.macro_id,
                             &m_labels,
-                        );
+                        ) {
+                            task.update_estimate(&self.state.macros);
+                        }
                         ui.next_column();
                         ui.checkbox(im_str!("Collectable"), &mut task.is_collectable);
                         ui.next_column();
@@ -528,8 +538,10 @@ impl<'a, 'b> Gui<'a> {
                         // Reset columns
                         ui.columns(1, im_str!("##"), false /* no border */);
 
-                        // None of these task modifications can happen at the same time becaise it's
-                        // not possible for a user to click multiple buttons in the same frame.
+                        // None of these task modifications can happen at the
+                        // same time becaise it's not possible for a user to
+                        // click multiple buttons in the same frame, at least I
+                        // hope.
                         if task_id > 0 {
                             if ui.small_button(im_str!("up")) {
                                 self.state.task_list_modification =
