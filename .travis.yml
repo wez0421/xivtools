@@ -9,4 +9,3 @@ script:
   - cargo test --verbose --all
 os:
   - windows
-  - osx
