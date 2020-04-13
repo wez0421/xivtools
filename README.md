@@ -45,4 +45,4 @@ Talan is still under active development with the following roadmap in mind:
 ### Usage
 Talan is largely controlled via the GUI. Run with -v or -vv for various amounts of debug info.
 
-To use it you will first need to install Rust via the [installation instructions](https://www.rust-lang.org/en-US/install.html). If given the option, you need the 2018 channel. Rust likely requires Visual Studio Community edition to be installed.
+To use it you will want to [download one of the releases](https://github.com/nvll/xivtools/releases), or build it yourself. For building, you first need to install Rust via the [installation instructions](https://www.rust-lang.org/en-US/install.html). Rust likely requires Visual Studio Community edition to be installed, so unless you're a developer I suggest using a [release](https://github.com/nvll/xivtools/releases)
