@@ -2,6 +2,7 @@
 
 members = [
     "gui-support",
+    "process",
     "talan",
     "ventures",
     "xiv",
