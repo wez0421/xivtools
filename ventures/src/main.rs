@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Error, Result};
 use chrono::{Local, NaiveDateTime};
+use std::collections::HashSet;
 use std::thread;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
@@ -16,6 +17,10 @@ struct Opts {
     /// Enable log levels.
     #[structopt(short = "v", parse(from_occurrences))]
     verbose: u64,
+
+    /// The name of a retainer to ignore
+    #[structopt(short = "i", long = "ignore")]
+    ignore: Vec<String>,
 }
 
 #[derive(Debug)]
@@ -25,7 +30,7 @@ struct Retainer {
     next: Instant,
 }
 
-fn parse_arguments() -> Result<xiv::XivHandle, Error> {
+fn parse_arguments() -> Result<(xiv::XivHandle, Vec<String>), Error> {
     let args = Opts::from_args();
     env_logger::Builder::from_default_env()
         .filter(
@@ -41,13 +46,15 @@ fn parse_arguments() -> Result<xiv::XivHandle, Error> {
     let mut h = xiv::init()?;
     h.use_slow_navigation = args.use_slow_navigation;
 
-    Ok(h)
+    Ok((h, args.ignore))
 }
 
 fn main() -> Result<(), Error> {
     let proc = process::Process::new("ffxiv_dx11.exe")?;
-    let hnd = parse_arguments()?;
+    let (hnd, ignore_vec) = parse_arguments()?;
+    let ignore_set: HashSet<String> = ignore_vec.into_iter().collect();
 
+    println!("ignore_set: {:#?}", ignore_set);
     let mut retainer_table = retainer::Retainers::new(&proc, retainer::OFFSET);
     retainer_table.read()?;
     if retainer_table.total_retainers == 0 {
@@ -66,7 +73,7 @@ fn main() -> Result<(), Error> {
         retainer_table.read()?;
 
         for (r_index, &retainer) in retainer_table.retainer[0..cnt].iter().enumerate() {
-            if retainer.venture_id == 0 {
+            if ignore_set.contains(&retainer.name().to_string()) || retainer.venture_id == 0 {
                 continue;
             }
 
@@ -103,13 +110,19 @@ fn main() -> Result<(), Error> {
         retainer_table.read()?;
         let next_retainer = retainer_table.retainer[0..cnt]
             .iter()
-            .min_by_key(|&r| r.venture_complete)
+            .min_by_key(|&r| {
+                if r.venture_id != 0 && !ignore_set.contains(&r.name().to_string()) {
+                    r.venture_complete
+                } else {
+                    u32::MAX
+                }
+            })
             .unwrap();
         log::info!(
             "Next: {} @ {} utc",
             next_retainer.name(),
             NaiveDateTime::from_timestamp(next_retainer.venture_complete as i64, 0)
-                .format("%H:%M:%S")
+                .format("%D %H:%M:%S")
         );
 
         let sleep_time = Duration::from_secs(
