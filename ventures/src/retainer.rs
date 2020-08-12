@@ -6,7 +6,7 @@ use std::os::raw::c_char;
 const RETAINER_COUNT: usize = 10;
 
 // 5.2
-pub const OFFSET: u64 = 0x1cb4ef0;
+pub const OFFSET: u64 = 0x1d61eb0;
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct RetainerTable {
