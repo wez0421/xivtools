@@ -287,7 +287,7 @@ mod test {
 
     #[test]
     fn recipe_specialization() -> Result<()> {
-        let inputs = [("Ruby Barding", 1), ("Hades Barding", 0)];
+        let inputs = [("True Barding of Light", 1), ("Hades Barding", 0)];
 
         for input in &inputs {
             let api_results = query_recipe(input.0)?;

@@ -83,7 +83,7 @@ mod tests {
 
     #[test]
     fn test_default_config() -> Result<(), Error> {
-        assert_eq!(get_config(None), Config::default());
+        assert_eq!(get_config(Some(&Path::new("config.json.test"))), Config::default());
         Ok(())
     }
 }
