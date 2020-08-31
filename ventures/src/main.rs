@@ -55,84 +55,108 @@ fn main() -> Result<(), Error> {
     let ignore_set: HashSet<String> = ignore_vec.into_iter().collect();
 
     println!("ignore_set: {:#?}", ignore_set);
-    let mut retainer_table = retainer::Retainers::new(&proc, retainer::OFFSET);
-    retainer_table.read()?;
-    if retainer_table.total_retainers == 0 {
+    let mut retainers = retainer::Retainers::new(&proc, retainer::OFFSET);
+    retainers.read()?;
+    if retainers.total_retainers == 0 {
         return Err(anyhow!(
             "No retainers found! Try opening a retainer bell at least once after logging in."
         ));
     }
 
-    let cnt: usize = retainer_table
+    let cnt: usize = retainers
         .retainer
         .iter()
         .fold(0, |acc, &r| acc + r.available as usize);
 
     loop {
         let mut menu_open = false;
-        retainer_table.read()?;
+        retainers.read()?;
 
-        for (r_index, &retainer) in retainer_table.retainer[0..cnt].iter().enumerate() {
-            if ignore_set.contains(&retainer.name().to_string()) || retainer.venture_id == 0 {
+        for rdx in 0..cnt {
+            if ignore_set.contains(&retainers.retainer[rdx].name().to_string()) {
                 continue;
             }
 
-            if retainer.venture_complete as i64 <= Local::now().timestamp() {
-                // The retainer position may have changed between venture runs
-                // so it's calculated here. The retainer will always be in the
-                // display list as far as I can tell.
-                let r_pos = match retainer_table
-                    .display_order
-                    .iter()
-                    .position(|&r_id| r_id == r_index as u8)
-                {
-                    Some(v) => v,
-                    None => {
-                        return Err(anyhow!(
-                            "Couldn't find {} in the display order list. This might be a bug?",
-                            retainer.name()
-                        ))
+            if retainers.retainer[rdx].venture_id == 0 {
+                continue;
+            }
+
+            let pos = retainers
+                .display_order
+                .iter()
+                .position(|&r_id| r_id == rdx as u8)
+                .unwrap();
+            let now = Local::now().timestamp();
+            let done = retainers.retainer[rdx].venture_complete;
+            if done <= now as u32 {
+                let mut updated = false;
+                let mut retries = 3;
+                // If for some reason we don't update the venture (Lag, UI state, etc) then clear the window and try this retainer again.
+                while !updated && retries > 0 {
+                    if !menu_open {
+                        open_retainer_menu(hnd);
+                        menu_open = true;
                     }
-                };
 
-                if !menu_open {
-                    open_retainer_menu(hnd);
-                    menu_open = true;
+                    log::info!("re-assigning {}'s venture", retainers.retainer[rdx].name());
+                    reassign_venture(hnd, pos);
+                    retainers.read()?;
+
+                    if retainers.retainer[rdx].venture_complete != done {
+                        updated = true;
+                    } else {
+                        log::error!("{}'s venture did not update. Retrying.", retainers.retainer[rdx].name());
+                        menu_open = false;
+                        retries -= 1;
+                    }
                 }
-
-                log::info!("re-assigning {}'s venture", retainer.name());
-                reassign_venture(hnd, r_pos as u64);
             }
         }
-
+ 
+        if menu_open {
+            ui::press_cancel(hnd);
+        }
+        thread::sleep(Duration::from_secs(60));
         // At this point any ventures that were complete have been re-assigned
         // so we can update our table cache and see who is next.
-        retainer_table.read()?;
-        let next_retainer = retainer_table.retainer[0..cnt]
-            .iter()
-            .min_by_key(|&r| {
-                if r.venture_id != 0 && !ignore_set.contains(&r.name().to_string()) {
-                    r.venture_complete
-                } else {
-                    u32::MAX
-                }
-            })
-            .unwrap();
-        log::info!(
-            "Next: {} @ {} utc",
-            next_retainer.name(),
-            NaiveDateTime::from_timestamp(next_retainer.venture_complete as i64, 0)
-                .format("%D %H:%M:%S")
-        );
+        // let next_retainer = retainers.retainer[0..cnt]
+        //     .iter()
+        //     .min_by_key(|&r| {
+        //         if r.venture_id != 0 && !ignore_set.contains(&r.name().to_string()) {
+        //             r.venture_complete
+        //         } else {
+        //             now
+        //         }
+        //     })
+        //     .unwrap();
+        // log::info!(
+        //     "Next: {} @ {} utc",
+        //     next_retainer.name(),
+        //     NaiveDateTime::from_timestamp(next_retainer.venture_complete as i64, 0)
+        //         .format("%D %H:%M:%S")
+        // );
 
-        let sleep_time = Duration::from_secs(
-            (next_retainer.venture_complete as i64 - Local::now().timestamp()) as u64,
-        );
+        // let sleep_time = Duration::from_secs(
+        //     (next_retainer.venture_complete as i64 - Local::now().timestamp()) as u64,
+        // );
 
-        // Clear the menu before sleep.
-        ui::press_cancel(hnd);
-        thread::sleep(sleep_time);
+        // // Clear the menu before sleep.
+        // ui::press_cancel(hnd);
+        // if
+        // thread::sleep(sleep_time);
     }
+}
+
+fn clear_retainer_window(hnd: xiv::XivHandle) {
+    xiv::ui::clear_window(hnd);
+    ui::press_escape(hnd);
+    ui::wait(1.0);
+    ui::press_escape(hnd);
+    ui::wait(1.0);
+    ui::press_cancel(hnd);
+    ui::wait(1.0);
+    ui::press_cancel(hnd);
+    ui::wait(1.0);
 }
 
 fn open_retainer_menu(hnd: xiv::XivHandle) {
@@ -163,7 +187,7 @@ fn open_retainer_menu(hnd: xiv::XivHandle) {
 // General usability rules
 // 1. Wait 1 second after moving around in a menu
 // 2. Wait 2 seconds after pressing a button for UI changes / Feo Ul / Retainer dialog.
-fn reassign_venture(hnd: xiv::XivHandle, r_id: u64) {
+fn reassign_venture(hnd: xiv::XivHandle, r_id: usize) {
     log::debug!("reassign_venture(r_id: {})", r_id);
     for _ in 0..r_id {
         ui::cursor_down(hnd);
