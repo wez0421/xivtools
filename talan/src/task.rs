@@ -13,7 +13,6 @@ pub struct MaterialCount {
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize, Default)]
 pub struct Task {
     pub specify_materials: bool,
-    pub is_collectable: bool, // craft collectables
     pub macro_id: usize,
     pub mat_quality: Vec<MaterialCount>,
     pub quantity: u32, // number of items to craft
@@ -26,7 +25,6 @@ impl Task {
     pub fn new(recipe: Recipe, count: u32) -> Task {
         Task {
             specify_materials: false,
-            is_collectable: false,
             macro_id: 0,
             quantity: count,
             mat_quality: recipe

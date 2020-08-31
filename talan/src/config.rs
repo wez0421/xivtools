@@ -11,8 +11,6 @@ pub struct Options {
     #[serde(default)]
     pub specialist: [bool; xiv::JOB_CNT],
     #[serde(default)]
-    pub swap_job_before_tasks: bool,
-    #[serde(default)]
     pub use_slow_dialog_navigation: bool,
     #[serde(default)]
     pub should_clear_window_on_craft: bool,
@@ -25,7 +23,6 @@ impl Default for Options {
         Options {
             gear: [0; xiv::JOB_CNT],
             specialist: [false; xiv::JOB_CNT],
-            swap_job_before_tasks: false,
             use_slow_dialog_navigation: false,
             should_clear_window_on_craft: true,
             remove_finished_tasks: true,
@@ -83,7 +80,10 @@ mod tests {
 
     #[test]
     fn test_default_config() -> Result<(), Error> {
-        assert_eq!(get_config(Some(&Path::new("config.json.test"))), Config::default());
+        assert_eq!(
+            get_config(Some(&Path::new("config.json.test"))),
+            Config::default()
+        );
         Ok(())
     }
 }

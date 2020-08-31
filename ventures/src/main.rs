@@ -35,7 +35,7 @@ struct Opts {
     #[structopt(short = "t", long = "time_passed")]
     time_passed: Option<u64>,
 
-    /// How many minutes a retainer's ventures take to complete (default:60). 
+    /// How many minutes a retainer's ventures take to complete (default:60).
     #[structopt(short = "1")]
     r1_period: Option<u64>,
     #[structopt(short = "2")]

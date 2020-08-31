@@ -346,12 +346,6 @@ impl<'a, 'b> Gui<'a> {
                     config.options.use_slow_dialog_navigation =
                         !config.options.use_slow_dialog_navigation;
                 }
-                if MenuItem::new(im_str!("Change Job Before Starting Tasks"))
-                    .selected(config.options.swap_job_before_tasks)
-                    .build(ui)
-                {
-                    config.options.swap_job_before_tasks = !config.options.swap_job_before_tasks;
-                }
                 menu.end(ui);
             }
             main_menu.end(ui);
@@ -472,20 +466,18 @@ impl<'a, 'b> Gui<'a> {
                     let total_ttc = config.tasks.iter().fold(0, |acc, t| acc + t.estimate);
                     let ttc_min = total_ttc / 60000;
                     let ttc_sec = (total_ttc - (ttc_min * 60000)) / 1000;
-                    ui.text_disabled(format!("Estimated time to craft all tasks: {}m{}s", ttc_min, ttc_sec));
+                    ui.text_disabled(format!(
+                        "Estimated time to craft all tasks: {}m{}s",
+                        ttc_min, ttc_sec
+                    ));
                 }
                 for (task_id, mut task) in &mut config.tasks.iter_mut().enumerate() {
                     let id = ui.push_id(task_id as i32);
                     let header_name = ImString::new(format!(
-                        "[{}] {}x {} {} (recipe lvl {} | {} durability | {} difficulty | {} quality)",
+                        "[{}] {}x {} (recipe lvl {} | {} durability | {} difficulty | {} quality)",
                         xiv::JOBS[task.recipe.job as usize],
                         task.quantity * task.recipe.result_amount,
                         task.recipe.name,
-                        if task.is_collectable {
-                            "(Collectable)"
-                        } else {
-                            ""
-                        },
                         task.recipe.level,
                         task.recipe.durability,
                         task.recipe.difficulty,
@@ -497,12 +489,11 @@ impl<'a, 'b> Gui<'a> {
                         .build()
                     {
                         // For the layout of:
-                        // | Count |      Macro     |  Collectable  | Specify materials
-                        ui.columns(4, im_str!("## Recipe Columns"), false /* no border */);
-                        ui.set_column_width(0, ui.window_size()[0] * 0.2);
+                        // | Count |      Macro    | Specify materials
+                        ui.columns(3, im_str!("## Recipe Columns"), false /* no border */);
+                        ui.set_column_width(0, ui.window_size()[0] * 0.3);
                         ui.set_column_width(1, ui.window_size()[0] * 0.4);
-                        ui.set_column_width(2, ui.window_size()[0] * 0.2);
-                        ui.set_column_width(3, ui.window_size()[0] * 0.2);
+                        ui.set_column_width(2, ui.window_size()[0] * 0.3);
 
                         let mut q: i32 = task.quantity as i32;
                         if ui.input_int(im_str!("#"), &mut q).build() {
@@ -510,8 +501,12 @@ impl<'a, 'b> Gui<'a> {
                             task.update_estimate(&self.state.macros);
                         }
                         ui.next_column();
-                        let m_labels: Vec<&ImStr> =
-                            self.state.macros.iter().map(|m| m.gui_name.as_ref()).collect();
+                        let m_labels: Vec<&ImStr> = self
+                            .state
+                            .macros
+                            .iter()
+                            .map(|m| m.gui_name.as_ref())
+                            .collect();
                         if ComboBox::new(im_str!("Macro")).build_simple_string(
                             ui,
                             &mut task.macro_id,
@@ -519,8 +514,6 @@ impl<'a, 'b> Gui<'a> {
                         ) {
                             task.update_estimate(&self.state.macros);
                         }
-                        ui.next_column();
-                        ui.checkbox(im_str!("Collectable"), &mut task.is_collectable);
                         ui.next_column();
                         ui.checkbox(im_str!("Specify Materials"), &mut task.specify_materials);
                         ui.next_column();
@@ -541,7 +534,6 @@ impl<'a, 'b> Gui<'a> {
                                 // are fast? This is a side effect of not wanting NQ to have
                                 // buttons that the integer widget has, and not wanting the
                                 // unaligned text of a label.
-                                ui.next_column(); // Use second column
                                 ui.text(&ImString::new(mat.name.clone()));
                                 ui.next_column();
                                 let nq_imstr = ImString::new(format!("{} NQ", qual.nq.to_string()));

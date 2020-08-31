@@ -11,15 +11,6 @@ use xiv::ui;
 // Milliseconds to pad the GCD to account for latency
 const GCD_PADDING: u64 = 250;
 
-pub fn find_swap_gear_set(avoid: u32, gear_sets: &[i32]) -> Option<i32> {
-    for (i, &set) in gear_sets.iter().enumerate() {
-        if i != avoid as usize && set != 0 {
-            return Some(set);
-        }
-    }
-    None
-}
-
 // Craft all the configured tasks and update the client by way of |status_callback|.
 pub fn craft_items<'a, S, C>(
     mut handle: xiv::XivHandle,
@@ -46,15 +37,6 @@ pub fn craft_items<'a, S, C>(
     // Clear role actions before we iterate tasks so the game state
     // and role action state will be in sync.
     let mut job: u32 = 256;
-    if options.swap_job_before_tasks {
-        if let Some(swap_set) = find_swap_gear_set(tasks[0].recipe.job, &options.gear[..]) {
-            change_gearset(handle, swap_set);
-            ui::wait(1.0);
-        } else {
-            log::error!("Couldn't find a spare gear set to swap to!");
-        }
-    }
-
     for (i, task) in tasks.iter().enumerate() {
         log::trace!("Task: {:?}", task);
         let task_job: usize = task.recipe.job as usize;
@@ -80,10 +62,6 @@ pub fn craft_items<'a, S, C>(
             log::trace!("already {}, no need to change job.", xiv::JOBS[task_job]);
         }
 
-        if task.is_collectable {
-            toggle_collectable(handle);
-        }
-
         // Navigate to the correct recipe based on the index provided
         select_recipe(handle, &task);
         select_materials(handle, &task);
@@ -98,7 +76,6 @@ pub fn craft_items<'a, S, C>(
             if !continue_fn()
                 || !execute_task(
                     handle,
-                    &task,
                     &macros[task.macro_id as usize].actions[..],
                     &mut continue_fn,
                 )
@@ -114,10 +91,6 @@ pub fn craft_items<'a, S, C>(
 
         ui::press_escape(handle);
         ui::wait(2.0);
-
-        if task.is_collectable {
-            toggle_collectable(handle);
-        }
     }
 }
 
@@ -219,12 +192,7 @@ pub fn select_materials(handle: xiv::XivHandle, task: &task::Task) {
     }
 }
 
-fn execute_task<C>(
-    handle: xiv::XivHandle,
-    task: &task::Task,
-    actions: &[&'static Action],
-    continue_fn: &mut C,
-) -> bool
+fn execute_task<C>(handle: xiv::XivHandle, actions: &[&'static Action], continue_fn: &mut C) -> bool
 where
     C: FnMut() -> bool,
 {
@@ -265,30 +233,11 @@ where
     // Wait for the last GCD to finish
     sleep(next_action - Instant::now());
 
-    // There are two paths here. If an item is collectable then it will
-    // prompt a dialog to collect the item as collectable. In this case,
-    // selecting confirm with the keyboard will bring the cursor up already.
-    // The end result is that it needs fewer presses of the confirm key
-    // than otherwise.
-    //
     // At the end of this sequence the cursor should have selected the recipe
     // again and be on the Synthesize button.
-    if task.is_collectable {
-        ui::wait(2.0);
-        ui::press_confirm(handle);
-        ui::wait(1.0);
-        ui::press_confirm(handle);
-    }
-    // Give the UI a moment before pressing confirm to highlight the recipe again
     ui::wait(3.0);
     ui::press_confirm(handle);
     true
-}
-
-fn send_action(handle: xiv::XivHandle, action: &str) {
-    ui::press_enter(handle);
-    ui::send_string(handle, &format!("/ac \"{}\"", action));
-    ui::press_enter(handle);
 }
 
 pub fn change_gearset(handle: xiv::XivHandle, gearset: i32) {
@@ -297,8 +246,4 @@ pub fn change_gearset(handle: xiv::XivHandle, gearset: i32) {
     ui::send_string(handle, &format!("/gearset change {}", gearset));
     ui::wait(0.5);
     ui::press_enter(handle);
-}
-
-pub fn toggle_collectable(handle: xiv::XivHandle) {
-    send_action(handle, &"collectable synthesis");
 }
