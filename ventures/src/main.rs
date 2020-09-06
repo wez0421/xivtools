@@ -1,6 +1,7 @@
 use anyhow::{anyhow, Error, Result};
 use chrono::{Local, NaiveDateTime};
 use std::collections::HashSet;
+use std::io::{self, Write};
 use std::thread;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
@@ -105,18 +106,22 @@ fn main() -> Result<(), Error> {
                     if retainers.retainer[rdx].venture_complete != done {
                         updated = true;
                     } else {
-                        log::error!("{}'s venture did not update. Retrying.", retainers.retainer[rdx].name());
+                        log::error!(
+                            "{}'s venture did not update. Retrying.",
+                            retainers.retainer[rdx].name()
+                        );
                         menu_open = false;
                         retries -= 1;
                     }
                 }
             }
         }
- 
         if menu_open {
             ui::press_cancel(hnd);
         }
         thread::sleep(Duration::from_secs(60));
+        print!(".");
+        io::stdout().flush().unwrap();
         // At this point any ventures that were complete have been re-assigned
         // so we can update our table cache and see who is next.
         // let next_retainer = retainers.retainer[0..cnt]
