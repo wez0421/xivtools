@@ -2,6 +2,7 @@
 use process::{RemoteStruct, UnknownField};
 use std::borrow::Cow;
 use std::ffi::CStr;
+use std::fmt;
 use std::os::raw::c_char;
 const RETAINER_COUNT: usize = 10;
 
@@ -14,6 +15,48 @@ pub struct RetainerTable {
     pub display_order: [u8; RETAINER_COUNT],
     pub ready: u8,
     pub total_retainers: u8,
+}
+
+enum CityState {
+    Limsa,
+    Gridania,
+    Uldah,
+    Foundation,
+    Kugane,
+    Crystarium,
+    Unknown(u8),
+}
+
+impl From<u8> for CityState {
+    fn from(val: u8) -> Self {
+        match val {
+            0x1 => CityState::Limsa,
+            0x2 => CityState::Gridania,
+            0x3 => CityState::Uldah,
+            0x4 => CityState::Foundation,
+            0x7 => CityState::Kugane,
+            0xA => CityState::Crystarium,
+            _ => CityState::Unknown(val),
+        }
+    }
+}
+
+impl fmt::Display for CityState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                CityState::Limsa => "Limsa Lominsa",
+                CityState::Gridania => "Gridania",
+                CityState::Uldah => "Uldah",
+                CityState::Foundation => "Foundation",
+                CityState::Kugane => "Kugane",
+                CityState::Crystarium => "Crystarium",
+                CityState::Unknown(val) => return write!(f, "Unknown({:x})", val),
+            }
+        )
+    }
 }
 
 #[repr(C)]
