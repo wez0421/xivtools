@@ -1,5 +1,8 @@
+mod citystate;
+mod classjob;
 pub mod ui;
-
+pub use citystate::CityState;
+pub use classjob::ClassJob;
 use log;
 use std::fmt;
 
