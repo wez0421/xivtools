@@ -5,7 +5,7 @@ use std::io::{self, Write};
 use std::thread;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
-use xiv::ui;
+use xiv::{ui, classjob};
 mod retainer;
 
 #[derive(Debug, StructOpt)]
@@ -64,6 +64,13 @@ fn main() -> Result<(), Error> {
         ));
     }
 
+    let mut cnt = 0;
+    for r in retainers.retainer.iter() {
+        if r.available {
+        println!("[{} {}] {}", r.level, classjob::ClassJob::from(r.classjob), r.name());
+            cnt += 1;
+        }
+    }
     let cnt: usize = retainers
         .retainer
         .iter()
