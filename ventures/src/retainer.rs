@@ -6,8 +6,8 @@ use std::fmt;
 use std::os::raw::c_char;
 const RETAINER_COUNT: usize = 10;
 
-// 5.3
-pub const OFFSET: u64 = 0x1d60eb0;
+// 5.31
+pub const OFFSET: u64 = 0x1d61eb0;
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct RetainerTable {
