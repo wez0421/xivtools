@@ -5,7 +5,7 @@ use std::io::{self, Write};
 use std::thread;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
-use xiv::{ui, classjob};
+use xiv::{ui, CityState, ClassJob};
 mod retainer;
 
 #[derive(Debug, StructOpt)]
@@ -19,9 +19,8 @@ struct Opts {
     #[structopt(short = "v", parse(from_occurrences))]
     verbose: u64,
 
-    /// The name of a retainer to ignore
-    #[structopt(short = "i", long = "ignore")]
-    ignore: Vec<String>,
+    #[structopt(short = "p")]
+    print_retainers: bool,
 }
 
 #[derive(Debug)]
@@ -31,7 +30,7 @@ struct Retainer {
     next: Instant,
 }
 
-fn parse_arguments() -> Result<(xiv::XivHandle, Vec<String>), Error> {
+fn parse_arguments() -> Result<(xiv::XivHandle, bool), Error> {
     let args = Opts::from_args();
     env_logger::Builder::from_default_env()
         .filter(
@@ -47,15 +46,35 @@ fn parse_arguments() -> Result<(xiv::XivHandle, Vec<String>), Error> {
     let mut h = xiv::init()?;
     h.use_slow_navigation = args.use_slow_navigation;
 
-    Ok((h, args.ignore))
+    Ok((h, args.print_retainers))
+}
+fn print_retainers(retainers: &retainer::Retainers) {
+    println!(
+        "{:24} {:10} {:20} {:^6} {:32}",
+        "Name", "Class/Job", "Home", "Active", "Venture"
+    );
+    for r in retainers.retainer.iter() {
+        if r.level >= 1 {
+            println!(
+                "{:24} {:10} {:20} {:^6} {:32}",
+                r.name(),
+                format!("{} {}", r.level, ClassJob::from(r.classjob)),
+                CityState::from(r.home_city),
+                if r.available { "x" } else { " " },
+                if r.venture_id != 0 {
+                    r.venture_id.to_string()
+                } else {
+                    "<none>".to_string()
+                }
+            );
+        }
+    }
 }
 
 fn main() -> Result<(), Error> {
     let proc = process::Process::new("ffxiv_dx11.exe")?;
-    let (hnd, ignore_vec) = parse_arguments()?;
-    let ignore_set: HashSet<String> = ignore_vec.into_iter().collect();
+    let (hnd, args_print_retainers) = parse_arguments()?;
 
-    println!("ignore_set: {:#?}", ignore_set);
     let mut retainers = retainer::Retainers::new(&proc, retainer::OFFSET);
     retainers.read()?;
     if retainers.total_retainers == 0 {
@@ -64,27 +83,21 @@ fn main() -> Result<(), Error> {
         ));
     }
 
-    let mut cnt = 0;
-    for r in retainers.retainer.iter() {
-        if r.available {
-        println!("[{} {}] {}", r.level, classjob::ClassJob::from(r.classjob), r.name());
-            cnt += 1;
-        }
+    if args_print_retainers {
+        print_retainers(&retainers);
+        return Ok(())
     }
-    let cnt: usize = retainers
+
+    let cnt = retainers
         .retainer
         .iter()
-        .fold(0, |acc, &r| acc + r.available as usize);
+        .fold(0, |a, &r| a + r.available as usize);
 
     loop {
         let mut menu_open = false;
         retainers.read()?;
 
         for rdx in 0..cnt {
-            if ignore_set.contains(&retainers.retainer[rdx].name().to_string()) {
-                continue;
-            }
-
             if retainers.retainer[rdx].venture_id == 0 {
                 continue;
             }
