@@ -1,10 +1,12 @@
 mod citystate;
 mod classjob;
 pub mod ui;
+mod venture;
 pub use citystate::CityState;
 pub use classjob::ClassJob;
 use log;
 use std::fmt;
+pub use venture::Venture;
 
 use anyhow::{anyhow, Error, Result};
 use std::ffi::CStr;

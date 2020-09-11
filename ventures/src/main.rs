@@ -5,7 +5,7 @@ use std::io::{self, Write};
 use std::thread;
 use std::time::{Duration, Instant};
 use structopt::StructOpt;
-use xiv::{ui, CityState, ClassJob};
+use xiv::{ui, CityState, ClassJob, Venture};
 mod retainer;
 
 #[derive(Debug, StructOpt)]
@@ -61,11 +61,7 @@ fn print_retainers(retainers: &retainer::Retainers) {
                 format!("{} {}", r.level, ClassJob::from(r.classjob)),
                 CityState::from(r.home_city),
                 if r.available { "x" } else { " " },
-                if r.venture_id != 0 {
-                    r.venture_id.to_string()
-                } else {
-                    "<none>".to_string()
-                }
+                Venture::from(r.venture_id),
             );
         }
     }
@@ -85,7 +81,7 @@ fn main() -> Result<(), Error> {
 
     if args_print_retainers {
         print_retainers(&retainers);
-        return Ok(())
+        return Ok(());
     }
 
     let cnt = retainers
