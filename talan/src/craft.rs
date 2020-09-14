@@ -3,10 +3,9 @@ use crate::action::Action;
 use crate::config::Options;
 use crate::macros::Macro;
 use crate::task;
-use log;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
-use xiv::ui;
+use xiv::{craft, ui, Process};
 
 // Milliseconds to pad the GCD to account for latency
 const GCD_PADDING: u64 = 250;
@@ -64,7 +63,11 @@ pub fn craft_items<'a, S, C>(
 
         // Navigate to the correct recipe based on the index provided
         select_recipe(handle, &task);
-        select_materials(handle, &task);
+        let trial = true;
+
+        if !trial {
+            select_materials(handle, &task);
+        }
         for task_index in 1..=task.quantity {
             log::info!(
                 "crafting {} {}/{}",
@@ -120,7 +123,7 @@ pub fn select_recipe(handle: xiv::XivHandle, task: &task::Task) {
         ui::cursor_down(handle);
     }
 
-    // Select the recipe to get to components / sythen
+    // Select the recipe to get to components / synthesize button
     ui::press_confirm(handle);
 }
 
@@ -196,12 +199,17 @@ fn execute_task<C>(handle: xiv::XivHandle, actions: &[&'static Action], continue
 where
     C: FnMut() -> bool,
 {
+    let proc = Process::new("ffxiv_dx11.exe").unwrap();
+    let mut xiv = craft::CraftState::new(&proc, craft::OFFSET);
+    xiv.read().unwrap();
     // If we're at the start of a task we will already have the Synthesize button
     // selected with the pointer.
+    // TODO: Trial synthesis code should be here.
     ui::press_confirm(handle);
 
     // The first action is one second off so we start typing while the
     // crafting window is coming up.
+    // TODO: Wait until State::ReadyForActions
     let mut next_action = Instant::now() + Duration::from_secs(2);
     let mut prev_action = next_action;
     for action in actions {
@@ -222,6 +230,8 @@ where
         ui::press_enter(handle);
         now = Instant::now();
         log::debug!("action: {} ({:?})", action.name, now - prev_action);
+
+        // TODO: Instead of this, wait for the step to increase
         prev_action = now;
         next_action = now + Duration::from_millis(action.wait_ms + GCD_PADDING);
     }

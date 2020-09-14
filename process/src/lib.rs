@@ -90,11 +90,14 @@ impl Process {
                 ));
             }
 
-            for i in 0..(needed as usize / mem::size_of::<DWORD>()) {
+            for &process in processes
+                .iter()
+                .take(needed as usize / mem::size_of::<DWORD>())
+            {
                 let handle = processthreadsapi::OpenProcess(
                     PROCESS_VM_READ | PROCESS_QUERY_INFORMATION,
                     FALSE,
-                    processes[i],
+                    process,
                 );
                 if handle == NULL {
                     continue;
@@ -148,10 +151,13 @@ impl Process {
             }
 
             let mut buf = [0; MAX_PATH];
-            for i in 0..(needed as usize / mem::size_of::<HMODULE>()) {
+            for &module in modules
+                .iter()
+                .take(needed as usize / mem::size_of::<HMODULE>())
+            {
                 if psapi::GetModuleBaseNameA(
                     hnd,
-                    modules[i],
+                    module,
                     buf.as_mut_ptr() as LPSTR,
                     buf.len() as u32,
                 ) == 0
@@ -170,13 +176,13 @@ impl Process {
                 let mut module_info = psapi::MODULEINFO::default();
                 if psapi::GetModuleInformation(
                     hnd,
-                    modules[i],
+                    module,
                     &mut module_info,
                     mem::size_of::<psapi::MODULEINFO>() as DWORD,
                 ) == FALSE
                 {
                     return Err(ProcessError::ModuleInformation(
-                        name.to_string(),
+                        name,
                         errhandlingapi::GetLastError(),
                     ));
                 }

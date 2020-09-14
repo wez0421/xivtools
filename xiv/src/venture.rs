@@ -873,7 +873,7 @@ impl fmt::Display for Venture {
             862 => "Sandalwood Sap",
             863 => "Sweetmeat Mussel",
             _ => {
-                s = format!("Unknown");
+                s = "Unknown".to_string();
                 &s
             }
         })

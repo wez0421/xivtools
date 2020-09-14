@@ -32,7 +32,7 @@ fn parse_list_line(line: &str) -> Result<ListItem, Error> {
     // Every item should have {NUM}x {NAME}. If we can't split here, then
     // assume the string is just an item name and count is 1.
     let v: Vec<&str> = line.split("x ").collect();
-    if line.is_empty() || !line.chars().nth(0).unwrap().is_ascii_digit() || v.len() < 2 {
+    if line.is_empty() || !line.chars().next().unwrap().is_ascii_digit() || v.len() < 2 {
         return Err(anyhow!("Empty list item!"));
     }
 

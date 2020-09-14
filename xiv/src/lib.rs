@@ -1,10 +1,13 @@
 mod citystate;
 mod classjob;
+mod remote;
 pub mod ui;
 mod venture;
 pub use citystate::CityState;
 pub use classjob::ClassJob;
-use log;
+pub use process::Process;
+pub use remote::craft;
+pub use remote::retainer;
 use std::fmt;
 pub use venture::Venture;
 

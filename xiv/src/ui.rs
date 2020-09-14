@@ -1,9 +1,7 @@
-#[cfg(windows)]
-use {winapi::shared::minwindef::UINT, winapi::um::winuser::PostMessageA};
-
-use log;
 use std::thread::sleep;
 use std::time::Duration;
+#[cfg(windows)]
+use {winapi::shared::minwindef::UINT, winapi::um::winuser::PostMessageA};
 
 // This module handles all interactions with the game UI.
 

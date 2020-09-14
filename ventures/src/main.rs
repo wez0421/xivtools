@@ -1,12 +1,10 @@
 use anyhow::{anyhow, Error, Result};
-use chrono::{Local, NaiveDateTime};
-use std::collections::HashSet;
+use chrono::Local;
 use std::io::{self, Write};
 use std::thread;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use structopt::StructOpt;
-use xiv::{ui, CityState, ClassJob, Venture};
-mod retainer;
+use xiv::{retainer, ui, CityState, ClassJob, Process, Venture};
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "ventures", about = "A FFXIV venture automation helper")]
@@ -21,13 +19,6 @@ struct Opts {
 
     #[structopt(short = "p")]
     print_retainers: bool,
-}
-
-#[derive(Debug)]
-struct Retainer {
-    id: u64,
-    period: Duration,
-    next: Instant,
 }
 
 fn parse_arguments() -> Result<(xiv::XivHandle, bool), Error> {
@@ -48,7 +39,7 @@ fn parse_arguments() -> Result<(xiv::XivHandle, bool), Error> {
 
     Ok((h, args.print_retainers))
 }
-fn print_retainers(retainers: &retainer::Retainers) {
+fn print_retainers(retainers: &retainer::RetainerState) {
     println!(
         "{:24} {:10} {:20} {:^6} {:32}",
         "Name", "Class/Job", "Home", "Active", "Venture"
@@ -68,10 +59,10 @@ fn print_retainers(retainers: &retainer::Retainers) {
 }
 
 fn main() -> Result<(), Error> {
-    let proc = process::Process::new("ffxiv_dx11.exe")?;
+    let proc = Process::new("ffxiv_dx11.exe")?;
     let (hnd, args_print_retainers) = parse_arguments()?;
 
-    let mut retainers = retainer::Retainers::new(&proc, retainer::OFFSET);
+    let mut retainers = retainer::RetainerState::new(&proc, retainer::OFFSET);
     retainers.read()?;
     if retainers.total_retainers == 0 {
         return Err(anyhow!(
@@ -166,18 +157,6 @@ fn main() -> Result<(), Error> {
         // if
         // thread::sleep(sleep_time);
     }
-}
-
-fn clear_retainer_window(hnd: xiv::XivHandle) {
-    xiv::ui::clear_window(hnd);
-    ui::press_escape(hnd);
-    ui::wait(1.0);
-    ui::press_escape(hnd);
-    ui::wait(1.0);
-    ui::press_cancel(hnd);
-    ui::wait(1.0);
-    ui::press_cancel(hnd);
-    ui::wait(1.0);
 }
 
 fn open_retainer_menu(hnd: xiv::XivHandle) {

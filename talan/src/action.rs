@@ -1,5 +1,4 @@
 use imgui::{im_str, ImStr};
-use lazy_static;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug, PartialEq)]

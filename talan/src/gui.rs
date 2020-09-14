@@ -5,7 +5,6 @@ use crate::rpc::{Request, Response};
 use crate::task::{Status, Task};
 use std::path::PathBuf;
 
-use gui_support;
 use imgui::*;
 use std::cmp::{max, min};
 use std::sync::mpsc::{Receiver, Sender};
@@ -188,16 +187,20 @@ impl<'a, 'b> Gui<'a> {
                     Response::EOW => {
                         // prune any completed tasks.
                         if config.options.remove_finished_tasks {
-                            if let Some(status) = &self.state.craft_status {
-                                for i in 0..config.tasks.len() {
-                                    if status[i].finished > 0 {
+                            if let Some(statuses) = &self.state.craft_status {
+                                for (status, task) in statuses
+                                    .iter()
+                                    .take(config.tasks.len())
+                                    .zip(config.tasks.iter_mut())
+                                {
+                                    if status.finished > 0 {
                                         log::debug!(
                                             "Marking {}x in '{}' as complete",
-                                            status[i].finished,
-                                            config.tasks[i].recipe.name
+                                            status.finished,
+                                            task.recipe.name
                                         );
-                                        config.tasks[i].quantity -= status[i].finished;
-                                        config.tasks[i].update_estimate(&self.state.macros);
+                                        task.quantity -= status.finished;
+                                        task.update_estimate(&self.state.macros);
                                     }
                                 }
                             }
