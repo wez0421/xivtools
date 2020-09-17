@@ -342,12 +342,11 @@ impl<'a, 'b> Gui<'a> {
                 {
                     config.options.remove_finished_tasks = !config.options.remove_finished_tasks;
                 }
-                if MenuItem::new(im_str!("Use Slow Dialog Navigation"))
-                    .selected(config.options.use_slow_dialog_navigation)
+                if MenuItem::new(im_str!("Use 'Trial Synthesis'"))
+                    .selected(config.options.use_trial_synthesis)
                     .build(ui)
                 {
-                    config.options.use_slow_dialog_navigation =
-                        !config.options.use_slow_dialog_navigation;
+                    config.options.use_trial_synthesis = !config.options.use_trial_synthesis;
                 }
                 menu.end(ui);
             }
@@ -518,7 +517,9 @@ impl<'a, 'b> Gui<'a> {
                             task.update_estimate(&self.state.macros);
                         }
                         ui.next_column();
-                        ui.checkbox(im_str!("Specify Materials"), &mut task.specify_materials);
+                        if !config.options.use_trial_synthesis {
+                            ui.checkbox(im_str!("Specify Materials"), &mut task.specify_materials);
+                        }
                         ui.next_column();
 
                         // Draw material widgets, or just the checkbox if checked.

@@ -40,14 +40,15 @@ pub enum MemoryError {
     NotFound,
 }
 
-#[derive(Default, Debug)]
+// TODO: Consider making 'modules' a ref-counted type for shallow copies.
+#[derive(Clone, Default, Debug)]
 pub struct ProcessModule {
     pub name: String,
     pub base: u64,
     pub size: usize,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Process {
     pub name: String,
     pub handle: HANDLE,
@@ -258,7 +259,7 @@ impl<const N: usize> Default for UnknownField<N> {
 impl<const N: usize> Eq for UnknownField<N> {}
 
 use std::ops::Deref;
-impl<'a, T> Deref for RemoteStruct<'a, T> {
+impl<T> Deref for RemoteStruct<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -267,15 +268,15 @@ impl<'a, T> Deref for RemoteStruct<'a, T> {
 }
 
 #[repr(C, packed)]
-pub struct RemoteStruct<'a, T> {
+pub struct RemoteStruct<T> {
     t: T,
     module: usize, // if we need to use other modules someday
     address: u64,
-    process: &'a Process,
+    process: Process,
 }
 
-impl<'a, T: std::default::Default> RemoteStruct<'a, T> {
-    pub fn new(process: &'a Process, address: u64) -> Self {
+impl<T: std::default::Default> RemoteStruct<T> {
+    pub fn new(process: Process, address: u64) -> Self {
         println!(
             "Creating new remote struct for address {:#x}",
             address + process.modules[0].base

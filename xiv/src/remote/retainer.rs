@@ -41,4 +41,4 @@ impl Retainer {
     }
 }
 
-pub type RetainerState<'a> = RemoteStruct<'a, RetainerTable>;
+pub type RetainerState = RemoteStruct<RetainerTable>;

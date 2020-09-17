@@ -223,4 +223,4 @@ impl fmt::Debug for CraftingStruct {
     }
 }
 
-pub type CraftState<'a> = RemoteStruct<'a, CraftingStruct>;
+pub type CraftState = RemoteStruct<CraftingStruct>;
