@@ -11,11 +11,11 @@ pub struct Options {
     #[serde(default)]
     pub specialist: [bool; xiv::JOB_CNT],
     #[serde(default)]
-    pub use_slow_dialog_navigation: bool,
-    #[serde(default)]
     pub should_clear_window_on_craft: bool,
     #[serde(default)]
     pub remove_finished_tasks: bool,
+    #[serde(default)]
+    pub use_trial_synthesis: bool,
 }
 
 impl Default for Options {
@@ -23,7 +23,7 @@ impl Default for Options {
         Options {
             gear: [0; xiv::JOB_CNT],
             specialist: [false; xiv::JOB_CNT],
-            use_slow_dialog_navigation: false,
+            use_trial_synthesis: false,
             should_clear_window_on_craft: true,
             remove_finished_tasks: true,
         }

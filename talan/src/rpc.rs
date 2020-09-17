@@ -105,7 +105,7 @@ impl Worker {
 
                         // If init throws an error we'll have a log to console anyway.
                         if let Ok(handle) = xiv::init() {
-                            let mut craft = craft::Crafter::new(
+                            let craft = craft::Crafter::new(
                                 handle,
                                 &options,
                                 &macros,
@@ -113,7 +113,9 @@ impl Worker {
                                 status_fn,
                                 continue_fn,
                             );
-                            craft.craft_items();
+
+                            // TODO: Do something useful with errors here.
+                            craft.unwrap().craft_items().unwrap();
                         }
                         self.reply(Response::EOW);
                     }
