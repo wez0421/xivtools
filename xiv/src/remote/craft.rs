@@ -166,7 +166,7 @@ impl Default for Condition {
     }
 }
 
-#[repr(C, packed)]
+#[repr(C)]
 #[derive(Copy, Clone, Default, PartialEq)]
 pub struct CraftingStruct {
     pub state: State, // u32
@@ -187,29 +187,27 @@ pub struct CraftingStruct {
 
 impl fmt::Display for CraftingStruct {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        unsafe {
-            writeln!(
-                f,
-                "{{\n\t       step: {}, HQ: {}%, condition: {}, state: {:?},",
-                self.step, self.hq, self.condition, self.state
-            )?;
-            writeln!(f, "\t     action: {}", self.action)?;
-            writeln!(
-                f,
-                "\t   progress: {} (last hit: {})",
-                self.progress_total, self.progress
-            )?;
-            writeln!(
-                f,
-                "\t    quality: {} (last hit: {})",
-                self.quality_total, self.quality
-            )?;
-            writeln!(
-                f,
-                "\t durability: {} (last hit: {}) }}",
-                self.durability, self.last_durability_hit
-            )
-        }
+        writeln!(
+            f,
+            "{{\n\t       step: {}, HQ: {}%, condition: {}, state: {:?},",
+            self.step, self.hq, self.condition, self.state
+        )?;
+        writeln!(f, "\t     action: {}", self.action)?;
+        writeln!(
+            f,
+            "\t   progress: {} (last hit: {})",
+            self.progress_total, self.progress
+        )?;
+        writeln!(
+            f,
+            "\t    quality: {} (last hit: {})",
+            self.quality_total, self.quality
+        )?;
+        writeln!(
+            f,
+            "\t durability: {} (last hit: {}) }}",
+            self.durability, self.last_durability_hit
+        )
     }
 }
 

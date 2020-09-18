@@ -1,6 +1,7 @@
 use crate::macros::Macro;
 use crate::recipe::Recipe;
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 #[derive(Copy, Clone, PartialEq, Debug, Serialize, Deserialize, Default)]
 pub struct MaterialCount {
@@ -21,6 +22,12 @@ pub struct Task {
     pub estimate: u32,
 }
 
+impl fmt::Display for Task {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}x {}", self.quantity, self.recipe.name)
+    }
+}
+
 impl Task {
     pub fn new(recipe: Recipe, count: u32) -> Task {
         Task {
@@ -38,13 +45,11 @@ impl Task {
     }
 
     pub fn update_estimate(&mut self, macros: &[Macro]) {
-        // 5 extra seconds of padding per craft is to conservatively cover the UI navigation per item.
         self.estimate = self.quantity
             * (macros[self.macro_id]
                 .actions
                 .iter()
-                .fold(0, |acc, action| acc + action.wait_ms) as u32
-                + 5000);
+                .fold(0, |acc, action| acc + action.gcd_ms) as u32);
     }
 }
 

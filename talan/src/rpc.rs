@@ -3,6 +3,8 @@ use crate::craft;
 use crate::macros::Macro;
 use crate::recipe;
 use crate::task;
+use anyhow::{anyhow, Context, Error};
+use std::fmt;
 use std::sync::mpsc::{Receiver, Sender};
 
 #[derive(Debug)]
@@ -12,32 +14,61 @@ pub enum Request {
         job: Option<u32>,
         count: u32,
     },
+    Macros(Vec<Macro>),
     Craft {
         options: config::Options,
         tasks: Vec<task::Task>,
-        macros: Vec<Macro>,
     },
+
     StopCrafting,
+}
+
+impl fmt::Display for Request {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Request::Recipe { item, .. } => write!(f, "Request::Recipe({})", item),
+            Request::Macros(_) => write!(f, "Request::Macros"),
+            Request::Craft { .. } => write!(f, "Request::Craft"),
+            Request::StopCrafting => write!(f, "Request::StopCrafting"),
+        }
+    }
 }
 
 #[derive(Debug)]
 pub enum Response {
+    Error(String),
     Recipe {
         recipe: Option<recipe::Recipe>,
         count: u32,
     },
     Craft(Vec<task::Status>),
-    EOW, // End of Work, aka finished.
+    Idle, // End of Work, aka finished.
+}
+
+impl fmt::Display for Response {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Response::Error(s) => write!(f, "Response::Error(\"{}\")", s),
+            Response::Recipe { recipe, .. } => write!(f, "Response::Recipe({})", recipe.is_some()),
+            Response::Craft(_) => write!(f, "Response::Craft"),
+            Response::Idle => write!(f, "Response::Idle"),
+        }
+    }
 }
 
 pub struct Worker {
     rx: Receiver<Request>,
     tx: Sender<Response>,
+    macros: Vec<Macro>,
 }
 
 impl Worker {
     pub fn new(rx: Receiver<Request>, tx: Sender<Response>) -> Self {
-        Worker { rx, tx }
+        Worker {
+            rx,
+            tx,
+            macros: Vec::new(),
+        }
     }
 
     fn try_receive(&self) -> Option<Request> {
@@ -49,25 +80,29 @@ impl Worker {
 
     fn receive(&self) -> Option<Request> {
         match self.rx.recv() {
-            Ok(r) => Some(r),
+            Ok(req) => {
+                log::debug!("worker <= {}", req);
+                Some(req)
+            }
             Err(e) => {
-                log::error!("[worker rx] failed to receive request: {}", e.to_string());
+                log::error!("worker <= failed to receive request: {}", e.to_string());
                 None
             }
         }
     }
 
-    fn reply(&self, resp: Response) {
-        self.tx.send(resp).unwrap_or_else(|e| {
-            log::error!("[worker tx] failed to send response: {}", e.to_string())
-        });
+    fn reply(&self, resp: Response) -> Result<(), Error> {
+        log::debug!("worker => {}", resp);
+        self.tx
+            .send(resp)
+            .context("worker => failed to send response")
     }
 
-    pub fn worker_thread(&mut self) {
+    pub fn worker_thread(&mut self) -> Result<(), Error> {
         log::trace!("worker thread started");
         loop {
             if let Some(request) = self.receive() {
-                match request {
+                let result = match request {
                     Request::Recipe { item, job, count } => {
                         log::trace!("querying xivapi for \"{}\" (job: {:?})", item, job);
                         let recipe_result = if let Ok(search_results) = xivapi::query_recipe(&item)
@@ -80,49 +115,54 @@ impl Worker {
                         self.reply(Response::Recipe {
                             recipe: recipe_result,
                             count,
-                        });
+                        })
                     }
-                    Request::Craft {
-                        options,
-                        tasks,
-                        macros,
-                    } => {
-                        // Send a full status update to the main thread after completing
-                        // an item.
-                        let status_fn = |status: &[task::Status]| {
-                            self.reply(Response::Craft(status.to_vec()));
-                        };
-
-                        // Check whether crafting should continue after each craft.
-                        let continue_fn = || -> bool {
-                            if let Some(r) = self.try_receive() {
-                                if let Request::StopCrafting = r {
-                                    return false;
-                                }
-                            }
-                            true
-                        };
-
-                        // If init throws an error we'll have a log to console anyway.
-                        if let Ok(handle) = xiv::init() {
-                            let craft = craft::Crafter::new(
-                                handle,
-                                &options,
-                                &macros,
-                                &tasks,
-                                status_fn,
-                                continue_fn,
-                            );
-
-                            // TODO: Do something useful with errors here.
-                            craft.unwrap().craft_items().unwrap();
-                        }
-                        self.reply(Response::EOW);
+                    Request::Macros(macros) => {
+                        self.macros = macros;
+                        Ok(())
                     }
-                    unknown => log::error!("Unexpected RPC received: {:?}", unknown),
+                    Request::Craft { options, tasks } => {
+                        self.craft_request(options, tasks, &self.macros[..])
+                    }
+                    unknown => Err(anyhow!("Unexpected RPC received: {:?}", unknown)),
                 };
+
+                if let Err(e) = result {
+                    self.reply(Response::Error(e.to_string()))?;
+                }
             }
         }
+    }
+
+    fn craft_request(
+        &self,
+        options: config::Options,
+        tasks: Vec<task::Task>,
+        macros: &[Macro],
+    ) -> Result<(), Error> {
+        // Send a full status update to the main thread after completing
+        // an item.
+        let status_fn = |status: &[task::Status]| -> Result<(), Error> {
+            self.reply(Response::Craft(status.to_vec()))
+        };
+
+        // Check whether crafting should continue after each craft.
+        let continue_fn = || -> bool {
+            if let Some(r) = self.try_receive() {
+                if let Request::StopCrafting = r {
+                    return false;
+                }
+            }
+            true
+        };
+
+        // If init throws an error we'll have a log to console anyway.
+        let handle = xiv::init()?;
+        let craft = craft::Crafter::new(handle, &options, &macros, &tasks, status_fn, continue_fn);
+
+        // TODO: Do something useful with errors here.
+        craft?.craft_items()?;
+        self.reply(Response::Idle)
     }
 }
 

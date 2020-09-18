@@ -143,6 +143,7 @@ impl<'a, 'b> Gui<'a> {
                                 config.options.specialist[task.recipe.job as usize],
                             );
                         }
+                        self.send_to_worker(Request::Macros(self.state.macros.clone()));
                     }
                     Err(e) => log::error!("Failed to load macros: {}", e),
                 }
@@ -154,6 +155,12 @@ impl<'a, 'b> Gui<'a> {
             // and other state by checking if there are any messages on the channel.
             if let Ok(resp) = self.rpc_rx.try_recv() {
                 match resp {
+                    Response::Error(err_msg) => {
+                        log::error!("{}", &err_msg);
+                        self.state.worker = WorkerStatus::Idle;
+                        self.state.craft_status = None;
+                        Gui::set_modal_text(&mut self.state, "Error!", &err_msg)
+                    }
                     Response::Recipe { recipe, count } => {
                         if let Some(r) = recipe {
                             let craft_cnt = (count as f32 / r.result_amount as f32).ceil() as u32;
@@ -176,7 +183,7 @@ impl<'a, 'b> Gui<'a> {
                     }
                     Response::Craft(status) => {
                         // There is a final status sent when the worker is told to stop,
-                        // before the EOW. This lets us track the final item completion
+                        // before the Idle. This lets us track the final item completion
                         // and reflect it in the progress bars, but we need to stay out
                         // of the crafting state to hide the |Stop| button.
                         if self.state.worker != WorkerStatus::Stopping {
@@ -184,7 +191,7 @@ impl<'a, 'b> Gui<'a> {
                         }
                         self.state.craft_status = Some(status);
                     }
-                    Response::EOW => {
+                    Response::Idle => {
                         // prune any completed tasks.
                         if config.options.remove_finished_tasks {
                             if let Some(statuses) = &self.state.craft_status {
@@ -301,7 +308,6 @@ impl<'a, 'b> Gui<'a> {
                         self.send_to_worker(Request::Craft {
                             options: config.options,
                             tasks: config.tasks.clone(),
-                            macros: self.state.macros.clone(),
                         });
                     }
                 }

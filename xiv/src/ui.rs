@@ -12,8 +12,7 @@ const CHAR_DELAY: f32 = 0.05;
 // Delay for window navigation sent via KEYDOWN / KEYUP events.
 // These are affected by latency and in testing 200 milliseconds
 // seems safe in laggier conditions.
-const UI_DELAY: f32 = 0.1;
-const UI_DELAY_SLOW: f32 = 0.2;
+const UI_DELAY: f32 = 0.2;
 
 #[cfg(windows)]
 mod constants {
@@ -187,11 +186,7 @@ pub fn send_key(xiv_handle: super::XivHandle, c: i32) {
     log::trace!("key {:x}", c);
     send_msg(xiv_handle, constants::MSG_KEY_DOWN, c);
     send_msg(xiv_handle, constants::MSG_KEY_UP, c);
-    if xiv_handle.use_slow_navigation {
-        wait(UI_DELAY_SLOW);
-    } else {
-        wait(UI_DELAY);
-    }
+    wait(UI_DELAY);
 }
 
 // Send a character/key to the XIV window

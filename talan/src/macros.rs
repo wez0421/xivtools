@@ -3,6 +3,7 @@ use crate::recipe;
 use anyhow::{anyhow, Result};
 use imgui::ImString;
 use serde::Deserialize;
+use std::fmt;
 use std::path::PathBuf;
 
 // The |Toml| variant structures are used entirely for deserializing
@@ -10,7 +11,7 @@ use std::path::PathBuf;
 #[derive(Debug, Deserialize)]
 pub struct MacroToml {
     pub name: String,
-    pub durability: Vec<u32>,
+    pub durability: Option<Vec<u32>>,
     pub max_rlvl: Option<u32>,
     pub min_rlvl: Option<u32>,
     pub difficulty: Option<u32>,
@@ -27,12 +28,25 @@ pub struct MacroFileToml {
 pub struct Macro {
     pub name: String,
     pub gui_name: ImString,
-    pub durability: Vec<u32>,
+    pub durability: Option<Vec<u32>>,
     pub max_rlvl: Option<u32>,
     pub min_rlvl: Option<u32>,
     pub difficulty: Option<u32>,
     pub specialist: bool,
     pub actions: Vec<&'static Action>,
+}
+
+impl fmt::Display for Macro {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let cnt = self.actions.len();
+        write!(
+            f,
+            "{} action{} - {}",
+            cnt,
+            if cnt != 1 { "s " } else { " " },
+            self.name
+        )
+    }
 }
 
 // Attempts to parse macros in |buffer| and return a list of actions.
@@ -165,11 +179,13 @@ pub fn get_macro_for_recipe(macros: &[Macro], recipe: &recipe::Recipe, specialis
             match_cnt += 1;
         }
 
-        if !mcro.durability.iter().any(|&d| d == recipe.durability) {
-            log::trace!("\t[{}] macro durability doesn't match", mcro.name);
-            continue;
+        if let Some(durability) = &mcro.durability {
+            if !durability.iter().any(|&d| d == recipe.durability) {
+                log::trace!("\t[{}] macro durability doesn't match", mcro.name);
+                continue;
+            }
+            match_cnt += 1;
         }
-        match_cnt += 1;
 
         if match_cnt > best_match_cnt {
             best_match_cnt = match_cnt;
@@ -262,7 +278,7 @@ mod tests {
         // single word, unquoted, with no wait
         let entry = parse_line(r#"/ac Innovation"#).unwrap();
         assert_eq!(entry.name, "Innovation");
-        assert_eq!(entry.wait_ms, 1500);
+        assert_eq!(entry.gcd_ms, 1500);
     }
 
     #[test]
@@ -270,7 +286,7 @@ mod tests {
         // single word, quoted, with no wait
         let entry = parse_line(r#"/ac "Innovation""#).unwrap();
         assert_eq!(entry.name, "Innovation");
-        assert_eq!(entry.wait_ms, 1500);
+        assert_eq!(entry.gcd_ms, 1500);
     }
 
     #[test]
@@ -278,7 +294,7 @@ mod tests {
         // single word, unquoted, with a wait
         let entry = parse_line(r#"/ac Innovation <wait.2>"#).unwrap();
         assert_eq!(entry.name, "Innovation");
-        assert_eq!(entry.wait_ms, 1500);
+        assert_eq!(entry.gcd_ms, 1500);
     }
 
     #[test]
@@ -286,7 +302,7 @@ mod tests {
         // single word, quoted, with a wait
         let entry = parse_line(r#"/ac "Innovation" <wait.2>"#).unwrap();
         assert_eq!(entry.name, "Innovation");
-        assert_eq!(entry.wait_ms, 1500);
+        assert_eq!(entry.gcd_ms, 1500);
     }
 
     #[test]
@@ -294,7 +310,7 @@ mod tests {
         // two words, quoted, with no wait
         let entry = parse_line(r#"/ac "Byregot's Blessing""#).unwrap();
         assert_eq!(entry.name, "Byregot's Blessing");
-        assert_eq!(entry.wait_ms, 2500);
+        assert_eq!(entry.gcd_ms, 2500);
     }
 
     #[test]
@@ -302,7 +318,7 @@ mod tests {
         // two words, quoted, with a wait
         let entry = parse_line(r#"/ac "Byregot's Blessing" <wait.3>"#).unwrap();
         assert_eq!(entry.name, "Byregot's Blessing");
-        assert_eq!(entry.wait_ms, 2500);
+        assert_eq!(entry.gcd_ms, 2500);
     }
 
     #[test]

@@ -62,7 +62,7 @@ fn main() -> Result<(), Error> {
     let proc = Process::new("ffxiv_dx11.exe")?;
     let (hnd, args_print_retainers) = parse_arguments()?;
 
-    let mut retainers = retainer::RetainerState::new(&proc, retainer::OFFSET);
+    let mut retainers = retainer::RetainerState::new(proc, retainer::OFFSET);
     retainers.read()?;
     if retainers.total_retainers == 0 {
         return Err(anyhow!(

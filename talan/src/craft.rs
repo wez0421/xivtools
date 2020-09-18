@@ -1,20 +1,14 @@
-//use crate::role_actions::RoleActions;
 use crate::action::Action;
 use crate::config::Options;
 use crate::macros::Macro;
 use crate::task;
-use anyhow::Error;
-use std::thread::sleep;
+use anyhow::{anyhow, Error};
 use std::time::{Duration, Instant};
-use xiv;
-
-// Milliseconds to pad the GCD to account for latency
-const GCD_PADDING: u64 = 250;
 
 pub struct Crafter<'a, C, S>
 where
     C: FnMut() -> bool,
-    S: FnMut(&[task::Status]),
+    S: FnMut(&[task::Status]) -> Result<(), Error>,
 {
     // TODO: Consolidate xiv::XivHandle and xiv::Process
     handle: xiv::XivHandle,
@@ -29,7 +23,7 @@ where
 impl<'a, C, S> Crafter<'a, C, S>
 where
     C: FnMut() -> bool,
-    S: FnMut(&[task::Status]),
+    S: FnMut(&[task::Status]) -> Result<(), Error>,
 {
     pub fn new(
         handle: xiv::XivHandle,
@@ -62,7 +56,7 @@ where
         // Initialize the crafting status and send an initialize slice
         // so the UI knows what to start rendering.
         let mut status: Vec<task::Status> = self.tasks.iter().map(task::Status::from).collect();
-        (self.status_fn)(&status[..]);
+        (self.status_fn)(&status[..])?;
 
         //handle.use_slow_navigation = options.use_slow_dialog_navigation;
         if self.options.should_clear_window_on_craft {
@@ -119,14 +113,10 @@ where
                     task.quantity
                 );
                 // Time to craft the items
-                if !(self.continue_fn)()
-                    || !self.execute_task(&self.macros[task.macro_id as usize].actions[..])
-                {
-                    log::info!("Received stop order");
-                    return Ok(());
-                }
+
+                self.execute_task(&self.macros[task.macro_id as usize].actions[..])?;
                 status[i].finished += 1;
-                (self.status_fn)(&status[..]);
+                (self.status_fn)(&status[..])?;
                 // Check if we received a message to stop from the main thread.
                 xiv::ui::wait(2.0);
             }
@@ -164,8 +154,8 @@ where
             xiv::ui::cursor_down(self.handle);
         }
 
-        // Select the recipe to get to components / synthesize button
-        xiv::ui::press_confirm(self.handle);
+        // // Select the recipe to get to components / synthesize button
+        // xiv::ui::press_confirm(self.handle);
     }
 
     fn select_any_materials(&self, task: &task::Task) {
@@ -236,56 +226,88 @@ where
         }
     }
 
-    fn execute_task(&mut self, actions: &[&'static Action]) -> bool {
-        // If we're at the start of a task we will already have the Synthesize button
-        // selected with the pointer.
-        // TODO: Trial synthesis code should be here.
+    fn wait_for_state(&mut self, expected_states: &[xiv::craft::State]) -> Result<(), Error> {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while Instant::now() < deadline {
+            self.game_state.read()?;
+            if expected_states.contains(&self.game_state.state) {
+                return Ok(());
+            }
+        }
+
+        Err(anyhow!(
+            "Timed out waiting for states {:?} (current state: {})",
+            expected_states,
+            self.game_state.state
+        ))
+    }
+
+    // Due to XIV not zeroing out the crafting struct the only way we can be
+    // fully sure a crafting step happened is to compare the entire state,
+    // otherwise we may end up with situation where a previous run's step
+    // matches what we're looking for.
+    fn wait_for_step(&mut self) -> Result<(), Error> {
+        let state = *self.game_state;
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while Instant::now() < deadline {
+            self.game_state.read()?;
+            if *self.game_state != state {
+                return Ok(());
+            }
+            std::thread::sleep(Duration::from_micros(100));
+        }
+
+        Err(anyhow!("Timed out waiting for action to complete"))
+    }
+
+    fn execute_task(&mut self, actions: &[&'static Action]) -> Result<(), Error> {
+        // We should be pointing at the Recipe, so this will select the
+        // appropriate synthesis button.
+        xiv::ui::press_confirm(self.handle);
         if self.options.use_trial_synthesis {
             xiv::ui::cursor_left(self.handle);
             xiv::ui::cursor_left(self.handle);
         }
         xiv::ui::press_confirm(self.handle);
+        self.wait_for_state(&[xiv::craft::State::ReadyForActions])?;
 
-        // The first action is one second off so we start typing while the
-        // crafting window is coming up.
-        // TODO: Wait until State::ReadyForActions
-        let mut next_action = Instant::now() + Duration::from_secs(2);
-        let mut prev_action = next_action;
+        let mut first = true;
         for action in actions {
+            log::debug!("action: {}", action.name);
+            // If a macro finished early by way of capping progress earlier than
+            // expected, or just generally failing by running out of durability
+            // then catch it and don't send the rest of the actions.
+            if [
+                xiv::craft::State::CraftCanceled,
+                xiv::craft::State::CraftFailed,
+                xiv::craft::State::CraftSucceeded,
+            ]
+            .iter()
+            .any(|&s| s == self.game_state.state)
+            {
+                break;
+            }
+
             if !(self.continue_fn)() {
-                return false;
+                return Err(anyhow!("Stop order received"));
             }
 
             xiv::ui::press_enter(self.handle);
             xiv::ui::send_string(self.handle, &format!("/ac \"{}\"", &action.name));
-            // At this point the action is queued in the text buffer, so we can
-            // wait the GCD duration based on the last action we sent.
-            let mut now = Instant::now();
-            if now < next_action {
-                let delta = next_action - now;
-                log::trace!("sleeping {:?}", delta);
-                sleep(delta);
+            // Wait for the step to advance from the previous string. On the
+            // first pass though step may not match 1 because a previous craft's
+            // step remains in the field in memory until an action is
+            // successfully performed.
+            if first {
+                first = !first;
+            } else {
+                self.wait_for_step()?;
             }
             xiv::ui::press_enter(self.handle);
-            now = Instant::now();
-            log::debug!("action: {} ({:?})", action.name, now - prev_action);
-
-            // TODO: Instead of this, wait for the step to increase
-            prev_action = now;
-            next_action = now + Duration::from_millis(action.wait_ms + GCD_PADDING);
         }
-
-        if !(self.continue_fn)() {
-            return false;
-        }
-
-        // Wait for the last GCD to finish
-        sleep(next_action - Instant::now());
 
         // At the end of this sequence the cursor should have selected the recipe
         // again and be on the Synthesize button.
-        xiv::ui::wait(3.0);
-        xiv::ui::press_confirm(self.handle);
-        true
+        self.wait_for_state(&[xiv::craft::State::CraftSucceeded])
     }
 }
