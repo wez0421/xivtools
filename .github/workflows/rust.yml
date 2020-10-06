@@ -14,10 +14,10 @@ jobs:
           toolchain: nightly
           override: true
           components: rustfmt, clippy
-    - name: Run cargo build
-      uses: actions-rs/cargo@v1
-      with:
-          command: build
+    # - name: Run cargo build
+    #   uses: actions-rs/cargo@v1
+    #   with:
+    #       command: build
     - name: Run cargo test
       uses: actions-rs/cargo@v1
       with:
