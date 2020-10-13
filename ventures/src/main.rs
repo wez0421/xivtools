@@ -1,10 +1,11 @@
 use anyhow::{anyhow, Error, Result};
 use chrono::Local;
-use std::io::{self, Write};
+use console::style;
+use indicatif;
 use std::thread;
 use std::time::Duration;
 use structopt::StructOpt;
-use xiv::{retainer, ui, CityState, ClassJob, Process, Venture};
+use xiv::{retainer, ui, CityState, ClassJob, Process};
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "ventures", about = "A FFXIV venture automation helper")]
@@ -39,20 +40,29 @@ fn parse_arguments() -> Result<(xiv::XivHandle, bool), Error> {
 
     Ok((h, args.print_retainers))
 }
-fn print_retainers(retainers: &retainer::RetainerState) {
+fn print_retainers(retainers: &[retainer::Retainer]) {
     println!(
         "{:24} {:10} {:20} {:^6} {:32}",
         "Name", "Class/Job", "Home", "Active", "Venture"
     );
-    for r in retainers.retainer.iter() {
-        if r.level >= 1 {
+    for retainer in retainers.iter() {
+        if retainer.is_valid() {
             println!(
                 "{:24} {:10} {:20} {:^6} {:32}",
-                r.name(),
-                format!("{} {}", r.level, ClassJob::from(r.classjob)),
-                CityState::from(r.home_city),
-                if r.available { "x" } else { " " },
-                Venture::from(r.venture_id),
+                style(retainer.name()).cyan(),
+                style(format!(
+                    "{} {}",
+                    retainer.level,
+                    ClassJob::from(retainer.classjob)
+                ))
+                .yellow(),
+                style(CityState::from(retainer.home_city)).magenta(),
+                if retainer.available {
+                    style("✓").green()
+                } else {
+                    style("x").red()
+                },
+                style(retainer.venture()).blue()
             );
         }
     }
@@ -61,62 +71,65 @@ fn print_retainers(retainers: &retainer::RetainerState) {
 fn main() -> Result<(), Error> {
     let proc = Process::new("ffxiv_dx11.exe")?;
     let (hnd, args_print_retainers) = parse_arguments()?;
-
-    let mut retainers = retainer::RetainerState::new(proc, retainer::OFFSET);
-    retainers.read()?;
-    if retainers.total_retainers == 0 {
+    let mut retainer_tbl = retainer::RetainerState::new(proc, retainer::OFFSET);
+    retainer_tbl.read()?;
+    if retainer_tbl.count == 0 {
         return Err(anyhow!(
             "No retainers found! Try opening a retainer bell at least once after logging in."
         ));
     }
 
     if args_print_retainers {
-        print_retainers(&retainers);
+        print_retainers(&retainer_tbl.retainers);
         return Ok(());
     }
 
-    let cnt = retainers
-        .retainer
-        .iter()
-        .fold(0, |a, &r| a + r.available as usize);
-
+    let mut display_order: Vec<usize> = vec![0; retainer_tbl.display_order.len()];
     loop {
         let mut menu_open = false;
-        retainers.read()?;
+        retainer_tbl.read()?;
 
-        for rdx in 0..cnt {
-            if retainers.retainer[rdx].venture_id == 0 {
+        // Invert the display order -> retainer array to be retainer -> display
+        // order. Calculate this each time we wake up in case the user changed
+        // the layout.
+        for (pos, r_id) in retainer_tbl.display_order.iter().enumerate() {
+            if retainer_tbl.retainers[pos].is_valid() {
+                display_order[*r_id as usize] = pos;
+            }
+        }
+
+        // Cache the retainer state so we can freely do process reads without reference ownership.
+        let r_cache = retainer_tbl.retainers.clone();
+        for (rdx, (retainer, pos)) in r_cache.iter().zip(display_order.iter()).enumerate() {
+            if !retainer.employed() {
                 continue;
             }
 
-            let pos = retainers
-                .display_order
-                .iter()
-                .position(|&r_id| r_id == rdx as u8)
-                .unwrap();
             let now = Local::now().timestamp();
-            let done = retainers.retainer[rdx].venture_complete;
+            let done = retainer.venture_complete;
             if done <= now as u32 {
                 let mut updated = false;
-                let mut retries = 3;
+                let mut retries = 5;
                 // If for some reason we don't update the venture (Lag, UI state, etc) then clear the window and try this retainer again.
                 while !updated && retries > 0 {
+                    log::info!(
+                        "re-assigning {} for {}",
+                        retainer.venture(),
+                        retainer.name()
+                    );
                     if !menu_open {
                         open_retainer_menu(hnd);
                         menu_open = true;
                     }
 
-                    log::info!("re-assigning {}'s venture", retainers.retainer[rdx].name());
-                    reassign_venture(hnd, pos);
-                    retainers.read()?;
+                    reassign_venture(hnd, *pos);
+                    retainer_tbl.read()?;
 
-                    if retainers.retainer[rdx].venture_complete != done {
+                    // Did the venture completion date/time change from what we have cached?
+                    if retainer_tbl.retainers[rdx].venture_complete != done {
                         updated = true;
                     } else {
-                        log::error!(
-                            "{}'s venture did not update. Retrying.",
-                            retainers.retainer[rdx].name()
-                        );
+                        log::error!("{}'s venture did not update. Retrying.", retainer.name());
                         menu_open = false;
                         retries -= 1;
                     }
@@ -126,9 +139,38 @@ fn main() -> Result<(), Error> {
         if menu_open {
             ui::press_cancel(hnd);
         }
-        thread::sleep(Duration::from_secs(60));
-        print!(".");
-        io::stdout().flush().unwrap();
+
+        // Find the next retainer whose venture will be complete, filtering out
+        // those who aren't running ventures at all.
+        retainer_tbl.read()?;
+        let next: retainer::Retainer =
+            retainer_tbl
+                .retainers
+                .iter()
+                .fold(retainer_tbl.retainers[0], |acc, r| {
+                    if !acc.employed()
+                        || (r.employed() && r.venture_complete < acc.venture_complete)
+                    {
+                        *r
+                    } else {
+                        acc
+                    }
+                });
+
+        // It's possible that the user canceled all ventures.
+        if next.venture_id == 0 {
+            return Err(anyhow!(
+                "No retainers were found on any ventures. Try checking the output of -p?"
+            ));
+        }
+
+        println!(
+            "\rNext: {}'s \"{}\" will be done at {}",
+            next.name(),
+            next.venture(),
+            next.venture_complete
+        );
+        thread::sleep(Duration::from_secs(5));
         // At this point any ventures that were complete have been re-assigned
         // so we can update our table cache and see who is next.
         // let next_retainer = retainers.retainer[0..cnt]

@@ -2,6 +2,7 @@
 #![allow(incomplete_features)]
 #![feature(const_generics)]
 
+use log;
 use std::ffi::CStr;
 use std::fmt;
 use std::mem;
@@ -277,8 +278,8 @@ pub struct RemoteStruct<T> {
 
 impl<T: std::default::Default> RemoteStruct<T> {
     pub fn new(process: Process, address: u64) -> Self {
-        println!(
-            "Creating new remote struct for address {:#x}",
+        log::debug!(
+            "Creating new RemoteStruct @ {:#x}",
             address + process.modules[0].base
         );
         RemoteStruct {

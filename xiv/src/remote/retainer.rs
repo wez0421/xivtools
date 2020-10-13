@@ -3,17 +3,17 @@ use process::{RemoteStruct, UnknownField};
 use std::borrow::Cow;
 use std::ffi::CStr;
 use std::os::raw::c_char;
-const RETAINER_COUNT: usize = 10;
+pub const RETAINER_COUNT: usize = 10;
 
 // 5.31
 pub const OFFSET: u64 = 0x1d61eb0;
 
 #[derive(Copy, Clone, Debug, Default)]
 pub struct RetainerTable {
-    pub retainer: [Retainer; RETAINER_COUNT],
+    pub retainers: [Retainer; RETAINER_COUNT],
     pub display_order: [u8; RETAINER_COUNT],
     pub ready: u8,
-    pub total_retainers: u8,
+    pub count: u8,
 }
 
 #[repr(C)]
@@ -38,6 +38,18 @@ pub struct Retainer {
 impl Retainer {
     pub fn name(&self) -> Cow<str> {
         unsafe { CStr::from_ptr(self.name.as_ptr() as *const c_char).to_string_lossy() }
+    }
+
+    pub fn is_valid(&self) -> bool {
+        self.level >= 1 && self.available
+    }
+
+    pub fn employed(&self) -> bool {
+        self.is_valid() && self.venture_id != 0 && self.venture_complete != 0
+    }
+
+    pub fn venture(&self) -> crate::Venture {
+        crate::Venture::from(self.venture_id)
     }
 }
 

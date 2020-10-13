@@ -7,7 +7,7 @@ jobs:
     name: Xivtools
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v1
     - name: Install latest nightly
       uses: actions-rs/toolchain@v1
       with:
