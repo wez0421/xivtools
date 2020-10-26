@@ -5,7 +5,7 @@ use std::fmt;
 use std::fmt::Display;
 
 // 5.2
-pub const OFFSET: u64 = 0x1D56860;
+pub const OFFSET: u64 = 0x1D578E0;
 pub const SIGNATURE: Signature = Signature {
     bytes: &[
         // ffxiv_dx11.exe+A766A0 - 80 A3 90000000 F8     - and byte ptr [rbx+00000090],-08
