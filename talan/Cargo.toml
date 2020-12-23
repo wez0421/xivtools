@@ -18,6 +18,7 @@ serde_json = "1.0.46"
 structopt = "0.3.9"
 toml = "0.5.6"
 enum-display-derive = "0.1.0"
+simple_logger = "1.11.0"
 
 [dependencies.gui_support]
 path = "../gui-support"

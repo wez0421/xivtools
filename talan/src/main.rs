@@ -10,6 +10,7 @@ mod task;
 
 use anyhow::{Error, Result};
 use rpc::{Request, Response, Worker};
+use simple_logger::SimpleLogger;
 use std::path::PathBuf;
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::thread;
@@ -31,16 +32,17 @@ struct Opts {
 
 fn parse_arguments() -> Result<(PathBuf, PathBuf), Error> {
     let args = Opts::from_args();
-    env_logger::Builder::from_default_env()
-        .filter(
-            Some("talan"),
+    SimpleLogger::new()
+        .with_level(log::LevelFilter::Info)
+        .with_module_level(
+            "talan",
             match args.verbose {
                 0 => log::LevelFilter::Info,
                 1 => log::LevelFilter::Debug,
                 _ => log::LevelFilter::Trace,
             },
         )
-        .init();
+        .init()?;
     Ok((args.config_path, args.macro_path))
 }
 

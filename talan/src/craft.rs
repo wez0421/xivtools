@@ -155,7 +155,7 @@ where
         }
 
         // // Select the recipe to get to components / synthesize button
-        // xiv::ui::press_confirm(self.handle);
+        xiv::ui::press_confirm(self.handle);
     }
 
     fn select_any_materials(&self, task: &task::Task) {
@@ -191,7 +191,6 @@ where
         if !task.specify_materials {
             return self.select_any_materials(task);
         }
-
         let mut hq_mats = task.mat_quality.iter().fold(0, |acc, &mat| acc + mat.hq);
         // If there are no HQ mats we can fast path this by just
         // starting the synthesis.
@@ -201,7 +200,7 @@ where
 
         // Up to the icon for the bottom material
         xiv::ui::cursor_up(self.handle);
-        // Right to the NQ column
+        // Right to the NQ columnu
         xiv::ui::cursor_right(self.handle);
         // Right to the HQ column
         xiv::ui::cursor_right(self.handle);
@@ -246,34 +245,28 @@ where
     // fully sure a crafting step happened is to compare the entire state,
     // otherwise we may end up with situation where a previous run's step
     // matches what we're looking for.
-    fn wait_for_step(&mut self) -> Result<(), Error> {
-        let state = *self.game_state;
+    fn wait_for_step(&mut self, previous_state: &xiv::craft::CraftingStruct) -> Result<(), Error> {
         let deadline = Instant::now() + Duration::from_secs(5);
         while Instant::now() < deadline {
             self.game_state.read()?;
-            if *self.game_state != state {
+            if *self.game_state != *previous_state {
                 return Ok(());
             }
             std::thread::sleep(Duration::from_micros(100));
         }
 
-        Err(anyhow!("Timed out waiting for action to complete"))
+        Err(anyhow!("Timed out waiting for the next action to finish"))
     }
 
     fn execute_task(&mut self, actions: &[&'static Action]) -> Result<(), Error> {
-        // We should be pointing at the Recipe, so this will select the
-        // appropriate synthesis button.
-        xiv::ui::press_confirm(self.handle);
         if self.options.use_trial_synthesis {
             xiv::ui::cursor_left(self.handle);
             xiv::ui::cursor_left(self.handle);
         }
         xiv::ui::press_confirm(self.handle);
         self.wait_for_state(&[xiv::craft::State::ReadyForActions])?;
-
-        let mut first = true;
+        let mut previous_state = self.game_state.clone();
         for action in actions {
-            log::debug!("action: {}", action.name);
             // If a macro finished early by way of capping progress earlier than
             // expected, or just generally failing by running out of durability
             // then catch it and don't send the rest of the actions.
@@ -289,21 +282,15 @@ where
             }
 
             if !(self.continue_fn)() {
-                return Err(anyhow!("Stop order received"));
+                log::trace!("tasks canceled by user");
+                return Err(anyhow!("Tasks canceled"));
             }
 
             xiv::ui::press_enter(self.handle);
             xiv::ui::send_string(self.handle, &format!("/ac \"{}\"", &action.name));
-            // Wait for the step to advance from the previous string. On the
-            // first pass though step may not match 1 because a previous craft's
-            // step remains in the field in memory until an action is
-            // successfully performed.
-            if first {
-                first = !first;
-            } else {
-                self.wait_for_step()?;
-            }
             xiv::ui::press_enter(self.handle);
+            self.wait_for_step(&previous_state)?;
+            previous_state = self.game_state.clone();
         }
 
         // At the end of this sequence the cursor should have selected the recipe
