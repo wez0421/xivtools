@@ -1,5 +1,4 @@
 #![allow(dead_code)]
-use enum_display_derive::Display;
 use process::{RemoteStruct, Signature, SignatureType, UnknownField};
 use std::fmt;
 use std::fmt::Display;
@@ -16,44 +15,78 @@ pub const SIGNATURE: Signature = Signature {
     sigtype: SignatureType::Relative32 { offset: 0xA },
 };
 
-#[repr(u32)]
-#[derive(Clone, Copy, Debug, Display, PartialEq)]
-pub enum Condition {
-    Uninitialized = 0,
-    Normal = 1,
-    Good = 2,
-    Excellent = 3,
-    Poor = 4,
-    Centered = 5,
-    Sturdy = 6,
-    Pliant = 7,
+// Condition. State, and Action cannot be enums because FFI enums that lack a mapped value will cause a hard crash.
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct Condition(u32);
+impl Condition {
+    pub const UNINITIALIZED: Condition = Condition(0x0);
+    pub const NORMAL: Condition = Condition(0x1);
+    pub const GOOD: Condition = Condition(0x2);
+    pub const EXCELLENT: Condition = Condition(0x3);
+    pub const POOR: Condition = Condition(0x4);
+    pub const CENTERED: Condition = Condition(0x5);
+    pub const STURDY: Condition = Condition(0x6);
+    pub const PLIANT: Condition = Condition(0x7);
 }
 
-#[repr(u32)]
-#[derive(Clone, Copy, Debug, Display, PartialEq)]
-pub enum State {
-    Uninitialized = 0,
-    Unknown1 = 1,
-    Unknown2 = 2,
-    ReadyForActions = 3,
-    CraftSucceeded = 4,
-    Unknown5 = 5,
-    CraftCanceled = 6,
-    Unknown7 = 7,
-    CraftFailed = 8,
-    CraftActionUsed = 9,
-    CraftBuffUsed = 10,
-}
-
-impl Default for State {
-    fn default() -> State {
-        State::Uninitialized
+impl Default for Condition {
+    fn default() -> Self {
+        Condition::UNINITIALIZED
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub struct Action(u32);
+impl Display for Condition {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Condition::UNINITIALIZED => write!(f, "Uninitialized"),
+            Condition::NORMAL => write!(f, "Normal"),
+            Condition::GOOD => write!(f, "Good"),
+            Condition::EXCELLENT => write!(f, "Excellent"),
+            Condition::POOR => write!(f, "Poor"),
+            Condition::CENTERED => write!(f, "Centered"),
+            Condition::STURDY => write!(f, "Sturdy"),
+            Condition::PLIANT => write!(f, "Pliant"),
+            _ => write!(f, "UnknownCondition({:#x})", self.0),
+        }
+    }
+}
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct State(u32);
+impl State {
+    pub const UNINITIALIZED: State = State(0);
+    pub const READY: State = State(0x3);
+    pub const SUCCESS: State = State(0x4);
+    pub const CANCELED: State = State(0x6);
+    pub const FAILED: State = State(0x8);
+    pub const ACTION_USED: State = State(0x9);
+    pub const BUFF_USED: State = State(0xA);
+}
+
+impl Default for State {
+    fn default() -> Self {
+        State::UNINITIALIZED
+    }
+}
+
+impl Display for State {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            State::UNINITIALIZED => write!(f, "Uninitialized"),
+            State::READY => write!(f, "Ready"),
+            State::SUCCESS => write!(f, "Success"),
+            State::CANCELED => write!(f, "Canceled"),
+            State::FAILED => write!(f, "Failed"),
+            State::ACTION_USED => write!(f, "Action used"),
+            State::BUFF_USED => write!(f, "Buff used"),
+            _ => write!(f, "UnknownState({:#x})", self.0),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct Action(u32);
 impl Display for Action {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.0 {
@@ -149,7 +182,7 @@ impl Display for Action {
             }
             4631 | 4632 | 4633 | 4634 | 4635 | 4636 | 4637 | 4638 => write!(f, "Waste Not"),
             4639 | 4640 | 4641 | 4642 | 4643 | 4644 | 19002 | 19003 => write!(f, "Waste Not II"),
-            _ => write!(f, "Unknown({})", self.0),
+            _ => write!(f, "UnknownAction({:#x})", self.0),
         }
     }
 }
@@ -160,14 +193,8 @@ impl Default for Action {
     }
 }
 
-impl Default for Condition {
-    fn default() -> Condition {
-        Condition::Uninitialized
-    }
-}
-
 #[repr(C)]
-#[derive(Copy, Clone, Default, PartialEq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct CraftingStruct {
     pub state: State, // u32
     __unknown_1: UnknownField<12>,
@@ -183,42 +210,6 @@ pub struct CraftingStruct {
     pub last_durability_hit: i32,
     pub condition: Condition, // u32
     __unknown_3: UnknownField<4>,
-}
-
-impl fmt::Display for CraftingStruct {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(
-            f,
-            "{{\n\t       step: {}, HQ: {}%, condition: {}, state: {:?},",
-            self.step, self.hq, self.condition, self.state
-        )?;
-        writeln!(f, "\t     action: {}", self.action)?;
-        writeln!(
-            f,
-            "\t   progress: {} (last hit: {})",
-            self.progress_total, self.progress
-        )?;
-        writeln!(
-            f,
-            "\t    quality: {} (last hit: {})",
-            self.quality_total, self.quality
-        )?;
-        writeln!(
-            f,
-            "\t durability: {} (last hit: {}) }}",
-            self.durability, self.last_durability_hit
-        )
-    }
-}
-
-impl fmt::Debug for CraftingStruct {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("")
-            .field("unknown 1", &self.__unknown_1)
-            .field("unknown 2", &self.__unknown_2)
-            .field("unknown 3", &self.__unknown_3)
-            .finish()
-    }
 }
 
 pub type CraftState = RemoteStruct<CraftingStruct>;

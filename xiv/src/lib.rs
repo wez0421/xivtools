@@ -63,9 +63,9 @@ unsafe extern "system" fn enum_callback(win_hwnd: HWND, arg: LONG_PTR) -> BOOL {
 
     if GetWindowTextA(win_hwnd, title.as_mut_ptr(), title.len() as i32) > 0 {
         let title = CStr::from_ptr(title.as_ptr()).to_string_lossy();
-        log::trace!("found {}: {:?}, arg {:?}", title, win_hwnd, xiv_hwnd);
+        log::debug!("found {}: {:?}, arg {:?}", title, win_hwnd, xiv_hwnd);
         if title.contains("FINAL FANTASY XIV") {
-            log::info!("Found FFXIV.\n");
+            log::info!("Found FFXIV.");
             *xiv_hwnd = win_hwnd;
             return 0;
         }

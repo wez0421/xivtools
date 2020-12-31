@@ -1,7 +1,8 @@
 use anyhow::{anyhow, Error, Result};
 use chrono::Local;
+use chrono::TimeZone;
 use console::style;
-use indicatif;
+use simple_logger::SimpleLogger;
 use std::thread;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -24,16 +25,17 @@ struct Opts {
 
 fn parse_arguments() -> Result<(xiv::XivHandle, bool), Error> {
     let args = Opts::from_args();
-    env_logger::Builder::from_default_env()
-        .filter(
-            Some("ventures"),
+    SimpleLogger::new()
+        .with_level(log::LevelFilter::Info)
+        .with_module_level(
+            "ventures",
             match args.verbose {
+                0 => log::LevelFilter::Info,
                 1 => log::LevelFilter::Debug,
-                2 => log::LevelFilter::Trace,
-                _ => log::LevelFilter::Info,
+                _ => log::LevelFilter::Trace,
             },
         )
-        .init();
+        .init()?;
 
     let mut h = xiv::init()?;
     h.use_slow_navigation = args.use_slow_navigation;
@@ -85,6 +87,7 @@ fn main() -> Result<(), Error> {
     }
 
     let mut display_order: Vec<usize> = vec![0; retainer_tbl.display_order.len()];
+    let mut print_next = true;
     loop {
         let mut menu_open = false;
         retainer_tbl.read()?;
@@ -134,6 +137,8 @@ fn main() -> Result<(), Error> {
                         retries -= 1;
                     }
                 }
+
+                print_next = true;
             }
         }
         if menu_open {
@@ -164,40 +169,17 @@ fn main() -> Result<(), Error> {
             ));
         }
 
-        println!(
-            "\rNext: {}'s \"{}\" will be done at {}",
-            next.name(),
-            next.venture(),
-            next.venture_complete
-        );
+        if print_next {
+            let next_time = Local.timestamp(next.venture_complete as i64, 0);
+            log::info!(
+                "Next: {}'s \"{}\" will be done at {}",
+                next.name(),
+                next.venture(),
+                next_time.format("%I:%M%P")
+            );
+            print_next = false;
+        }
         thread::sleep(Duration::from_secs(5));
-        // At this point any ventures that were complete have been re-assigned
-        // so we can update our table cache and see who is next.
-        // let next_retainer = retainers.retainer[0..cnt]
-        //     .iter()
-        //     .min_by_key(|&r| {
-        //         if r.venture_id != 0 && !ignore_set.contains(&r.name().to_string()) {
-        //             r.venture_complete
-        //         } else {
-        //             now
-        //         }
-        //     })
-        //     .unwrap();
-        // log::info!(
-        //     "Next: {} @ {} utc",
-        //     next_retainer.name(),
-        //     NaiveDateTime::from_timestamp(next_retainer.venture_complete as i64, 0)
-        //         .format("%D %H:%M:%S")
-        // );
-
-        // let sleep_time = Duration::from_secs(
-        //     (next_retainer.venture_complete as i64 - Local::now().timestamp()) as u64,
-        // );
-
-        // // Clear the menu before sleep.
-        // ui::press_cancel(hnd);
-        // if
-        // thread::sleep(sleep_time);
     }
 }
 

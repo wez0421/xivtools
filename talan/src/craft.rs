@@ -118,7 +118,8 @@ where
                 status[i].finished += 1;
                 (self.status_fn)(&status[..])?;
                 // Check if we received a message to stop from the main thread.
-                xiv::ui::wait(2.0);
+                xiv::ui::wait(1.0);
+                xiv::ui::press_confirm(self.handle);
             }
 
             xiv::ui::press_escape(self.handle);
@@ -264,16 +265,16 @@ where
             xiv::ui::cursor_left(self.handle);
         }
         xiv::ui::press_confirm(self.handle);
-        self.wait_for_state(&[xiv::craft::State::ReadyForActions])?;
+        self.wait_for_state(&[xiv::craft::State::READY])?;
         let mut previous_state = self.game_state.clone();
         for action in actions {
             // If a macro finished early by way of capping progress earlier than
             // expected, or just generally failing by running out of durability
             // then catch it and don't send the rest of the actions.
             if [
-                xiv::craft::State::CraftCanceled,
-                xiv::craft::State::CraftFailed,
-                xiv::craft::State::CraftSucceeded,
+                xiv::craft::State::CANCELED,
+                xiv::craft::State::FAILED,
+                xiv::craft::State::SUCCESS,
             ]
             .iter()
             .any(|&s| s == self.game_state.state)
@@ -295,6 +296,6 @@ where
 
         // At the end of this sequence the cursor should have selected the recipe
         // again and be on the Synthesize button.
-        self.wait_for_state(&[xiv::craft::State::CraftSucceeded])
+        self.wait_for_state(&[xiv::craft::State::SUCCESS])
     }
 }
