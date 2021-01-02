@@ -52,7 +52,6 @@ where
     // Craft all the configured tasks and update the client by way of |status_callback|.
     pub fn craft_items(&mut self) -> Result<(), Error> {
         self.game_state.read()?;
-        log::info!("Game state at start of craft: {}", *self.game_state);
         // Initialize the crafting status and send an initialize slice
         // so the UI knows what to start rendering.
         let mut status: Vec<task::Status> = self.tasks.iter().map(task::Status::from).collect();
@@ -101,7 +100,6 @@ where
 
             // Navigate to the correct recipe based on the index provided
             self.select_recipe(&task);
-
             if !self.options.use_trial_synthesis {
                 self.select_materials(&task);
             }
