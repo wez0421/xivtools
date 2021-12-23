@@ -1,6 +1,6 @@
 // const generics are not complete and only available in nightly
 #![allow(incomplete_features)]
-#![feature(const_generics)]
+#![feature(generic_const_exprs)]
 
 use log;
 use std::ffi::CStr;

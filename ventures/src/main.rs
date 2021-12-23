@@ -8,6 +8,8 @@ use std::time::Duration;
 use structopt::StructOpt;
 use xiv::{retainer, ui, CityState, ClassJob, Process};
 
+const AFK_TIMEOUT: i64 = 9 * 60; // nine minutes to avoid going afk at all
+
 #[derive(Debug, StructOpt)]
 #[structopt(name = "ventures", about = "A FFXIV venture automation helper")]
 struct Opts {
@@ -21,9 +23,12 @@ struct Opts {
 
     #[structopt(short = "p")]
     print_retainers: bool,
+
+    #[structopt(short = "a")]
+    anti_afk: bool,
 }
 
-fn parse_arguments() -> Result<(xiv::XivHandle, bool), Error> {
+fn parse_arguments() -> Result<(xiv::XivHandle, bool, bool), Error> {
     let args = Opts::from_args();
     SimpleLogger::new()
         .with_level(log::LevelFilter::Info)
@@ -40,7 +45,7 @@ fn parse_arguments() -> Result<(xiv::XivHandle, bool), Error> {
     let mut h = xiv::init()?;
     h.use_slow_navigation = args.use_slow_navigation;
 
-    Ok((h, args.print_retainers))
+    Ok((h, args.print_retainers, args.anti_afk))
 }
 fn print_retainers(retainers: &[retainer::Retainer]) {
     println!(
@@ -72,7 +77,7 @@ fn print_retainers(retainers: &[retainer::Retainer]) {
 
 fn main() -> Result<(), Error> {
     let proc = Process::new("ffxiv_dx11.exe")?;
-    let (hnd, args_print_retainers) = parse_arguments()?;
+    let (hnd, args_print_retainers, args_anti_afk) = parse_arguments()?;
     let mut retainer_tbl = retainer::RetainerState::new(proc, retainer::OFFSET);
     retainer_tbl.read()?;
     if retainer_tbl.count == 0 {
@@ -87,6 +92,7 @@ fn main() -> Result<(), Error> {
     }
 
     let mut display_order: Vec<usize> = vec![0; retainer_tbl.display_order.len()];
+    let mut last_venture_time: i64 = Local::now().timestamp();
     let mut print_next = true;
     loop {
         let mut menu_open = false;
@@ -99,6 +105,13 @@ fn main() -> Result<(), Error> {
             if retainer_tbl.retainers[pos].is_valid() {
                 display_order[*r_id as usize] = pos;
             }
+        }
+
+        if args_anti_afk && Local::now().timestamp() - last_venture_time > AFK_TIMEOUT {
+            log::info!("Opening the menu to avoid afk timeout");
+            open_retainer_menu(hnd);
+            menu_open = true;
+            last_venture_time = Local::now().timestamp();
         }
 
         // Cache the retainer state so we can freely do process reads without reference ownership.
@@ -120,6 +133,7 @@ fn main() -> Result<(), Error> {
                         retainer.venture(),
                         retainer.name()
                     );
+
                     if !menu_open {
                         open_retainer_menu(hnd);
                         menu_open = true;
@@ -138,9 +152,11 @@ fn main() -> Result<(), Error> {
                     }
                 }
 
+                last_venture_time = Local::now().timestamp();
                 print_next = true;
             }
         }
+
         if menu_open {
             ui::press_cancel(hnd);
         }
