@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize, Default)]
 pub struct RecipeMaterial {
-    pub id: u32,
     pub count: u32,
     pub name: String,
 }
@@ -34,11 +33,10 @@ impl From<&xivapi::ApiRecipe> for Recipe {
         ];
 
         let mut mats = Vec::new();
-        for (opt_mat, cnt) in recipe_mats.iter() {
-            if let Some(mat) = opt_mat {
+        for (mat, cnt) in recipe_mats.iter() {
+            if let Some(name) = &mat.Name {
                 mats.push(RecipeMaterial {
-                    id: mat.ID,
-                    name: mat.Name.to_owned(),
+                    name: name.to_owned(),
                     count: *cnt,
                 });
             }
@@ -131,7 +129,10 @@ mod test {
 
     #[test]
     fn specialization() -> Result<()> {
-        let tests = [("Cloud Pearl", false), ("True Barding of Light", true)];
+        let tests = [
+            ("Cloud Pearl", false),
+            ("The Final Day Orchestrion Roll", true),
+        ];
         for test in tests.iter() {
             let recipe = Recipe::filter(&query_recipe(test.0)?[..], test.0, None).unwrap();
             assert_eq!(recipe.name, test.0);

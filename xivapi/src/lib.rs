@@ -9,11 +9,10 @@ const XIVAPI_SEARCH_URL: &str = "https://xivapi.com/search";
 
 #[allow(non_snake_case)]
 #[derive(Clone, Debug, Deserialize)]
-pub struct ItemIngredient {
-    pub Name: String,
-    pub ID: u32,
-}
 
+pub struct ItemIngredient {
+    pub Name: Option<String>,
+}
 // These structures match the XIVApi schemas
 #[allow(non_snake_case)]
 #[derive(Clone, Debug, Deserialize)]
@@ -58,12 +57,12 @@ pub struct ApiRecipe {
     pub DurabilityFactor: u32,
     pub QualityFactor: u32,
     pub IsSpecializationRequired: u32,
-    pub ItemIngredient0: Option<ItemIngredient>,
-    pub ItemIngredient1: Option<ItemIngredient>,
-    pub ItemIngredient2: Option<ItemIngredient>,
-    pub ItemIngredient3: Option<ItemIngredient>,
-    pub ItemIngredient4: Option<ItemIngredient>,
-    pub ItemIngredient5: Option<ItemIngredient>,
+    pub ItemIngredient0: ItemIngredient,
+    pub ItemIngredient1: ItemIngredient,
+    pub ItemIngredient2: ItemIngredient,
+    pub ItemIngredient3: ItemIngredient,
+    pub ItemIngredient4: ItemIngredient,
+    pub ItemIngredient5: ItemIngredient,
     pub GameContentLinks: Option<GameContentLinks>,
 }
 
@@ -161,12 +160,12 @@ pub fn query_recipe(item_name: &str) -> Result<Vec<ApiRecipe>, Error> {
         "DifficultyFactor",
         "DurabilityFactor",
         "ID",
-        "ItemIngredient0",
-        "ItemIngredient1",
-        "ItemIngredient2",
-        "ItemIngredient3",
-        "ItemIngredient4",
-        "ItemIngredient5",
+        "ItemIngredient0.Name",
+        "ItemIngredient1.Name",
+        "ItemIngredient2.Name",
+        "ItemIngredient3.Name",
+        "ItemIngredient4.Name",
+        "ItemIngredient5.Name",
         "Name",
         "QualityFactor",
         "IsSpecializationRequired",
@@ -287,7 +286,7 @@ mod test {
 
     #[test]
     fn recipe_specialization() -> Result<()> {
-        let inputs = [("True Barding of Light", 1), ("Hades Barding", 0)];
+        let inputs = [("The Final Day Orchestrion Roll", 1), ("Hades Barding", 0)];
 
         for input in &inputs {
             let api_results = query_recipe(input.0)?;
