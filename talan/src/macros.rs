@@ -311,22 +311,80 @@ mod tests {
         assert_eq!(result.is_err(), true);
     }
 
+    // All endwalker actions with some comments and waits tossed in to ensure they're parsed out
+    // properly.
     const TEST_MACRO_BUFFER: &str = r#"
-        /ac "Inner Quiet" <wait.2>
-        /ac "Great Strides" <wait.2>
-        /ac "Manipulation" <wait.3>
-        /ac "Byregot's Blessing" <wait.3>
-        #/ac "Commented Action" <wait.1>
-        /ac "Careful Synthesis" <wait.3>"#;
+        /ac Advanced Touch
+        /ac Basic Synthesis
+        /ac Basic Touch
+        /ac Byregot's Blessing
+        /ac Careful Observation
+        /ac Careful Synthesis
+        /ac Delicate Synthesis
+        /ac Final Appraisal
+        /ac Focused Synthesis
+        /ac Focused Touch
+        /ac Great Strides
+        /ac Groundwork
+        /ac Hasty Touch
+        /ac Heart and Soul
+        /ac Innovation
+        /ac Intensive Synthesis <wait.3>
+        /ac Manipulation
+        /ac Master's Mend
+        #/ac Master's Mend
+        /ac Muscle Memory
+        /ac Observe
+        /ac Precise Touch
+        /ac Preparatory Touch
+        /ac Prudent Synthesis
+        /ac Prudent Touch
+        /ac Rapid Synthesis
+        /ac Reflect <wait.10>
+        /ac Standard Touch
+        /ac Trained Eye
+        /ac Trained Finesse
+        /ac Tricks of the Trade
+        /ac Veneration
+        /ac Waste Not
+        /ac Waste Not II"#;
 
     #[test]
-    fn macros_buffer() -> anyhow::Result<()> {
+    fn all_actions() -> anyhow::Result<()> {
         let expected = [
-            &ACTIONS.get("inner quiet").unwrap(),
-            &ACTIONS.get("great strides").unwrap(),
-            &ACTIONS.get("manipulation").unwrap(),
+            &ACTIONS.get("advanced touch").unwrap(),
+            &ACTIONS.get("basic synthesis").unwrap(),
+            &ACTIONS.get("basic touch").unwrap(),
             &ACTIONS.get("byregot's blessing").unwrap(),
+            &ACTIONS.get("careful observation").unwrap(),
             &ACTIONS.get("careful synthesis").unwrap(),
+            &ACTIONS.get("delicate synthesis").unwrap(),
+            &ACTIONS.get("final appraisal").unwrap(),
+            &ACTIONS.get("focused synthesis").unwrap(),
+            &ACTIONS.get("focused touch").unwrap(),
+            &ACTIONS.get("great strides").unwrap(),
+            &ACTIONS.get("groundwork").unwrap(),
+            &ACTIONS.get("hasty touch").unwrap(),
+            &ACTIONS.get("heart and soul").unwrap(),
+            &ACTIONS.get("innovation").unwrap(),
+            &ACTIONS.get("intensive synthesis").unwrap(),
+            &ACTIONS.get("manipulation").unwrap(),
+            &ACTIONS.get("master's mend").unwrap(),
+            &ACTIONS.get("muscle memory").unwrap(),
+            &ACTIONS.get("observe").unwrap(),
+            &ACTIONS.get("precise touch").unwrap(),
+            &ACTIONS.get("preparatory touch").unwrap(),
+            &ACTIONS.get("prudent synthesis").unwrap(),
+            &ACTIONS.get("prudent touch").unwrap(),
+            &ACTIONS.get("rapid synthesis").unwrap(),
+            &ACTIONS.get("reflect").unwrap(),
+            &ACTIONS.get("standard touch").unwrap(),
+            &ACTIONS.get("trained eye").unwrap(),
+            &ACTIONS.get("trained finesse").unwrap(),
+            &ACTIONS.get("tricks of the trade").unwrap(),
+            &ACTIONS.get("veneration").unwrap(),
+            &ACTIONS.get("waste not").unwrap(),
+            &ACTIONS.get("waste not ii").unwrap(),
         ];
         let actual = super::parse_buffer(TEST_MACRO_BUFFER)?;
         for (&left, right) in expected.iter().zip(actual.iter()) {
