@@ -20,27 +20,14 @@
 #   - This macro should only be used of the recipe's job is configured as a specialist
 #
 
+# This macro will work for any recipe below level 70 of any durability. For macros of different
+# level ranges you can gate by min_rlvl and max_rlvl as necessary.
 [[xiv_macro]]
-name = "Eulmore Deliveries"
-durability = [ 60, 80 ]
-specialist = true
-actions = """
-/ac Reflect <wait.3>
-/ac "Prudent Touch" <wait.3>
-/ac Innovation <wait.2>
-/ac "Delicate Synthesis" <wait.3>
-/ac "Prudent Touch" <wait.3>
-/ac "Delicate Synthesis" <wait.3>
-/ac "Delicate Synthesis" <wait.3>
-/ac "Delicate Synthesis" <wait.3>
-"""
-
-# This macro will work for any recipe below level 50 of any durability
-[[xiv_macro]]
-name = "1 - 50 HQ"
-max_rlvl = 50
+name = "1 - 70 HQ"
+max_rlvl = 70
 durability = [ 35, 40, 60, 70, 80 ]
 actions = """
 /ac "Trained Eye" <wait.3>
-/ac "Careful Synthesis" <wait.3>
+/ac "Veneration" <wait.2>
+/ac "Groundwork" <wait.3>
 """
