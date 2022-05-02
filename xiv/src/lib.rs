@@ -1,6 +1,5 @@
 pub mod ui;
 
-use log;
 use std::fmt;
 
 use anyhow::{anyhow, Error, Result};

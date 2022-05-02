@@ -27,7 +27,7 @@ pub enum Response {
         count: u32,
     },
     Craft(Vec<task::Status>),
-    EOW, // End of Work, aka finished.
+    Eow, // End of Work, aka finished.
 }
 
 pub struct Worker {
@@ -95,10 +95,8 @@ impl Worker {
 
                         // Check whether crafting should continue after each craft.
                         let continue_fn = || -> bool {
-                            if let Some(r) = self.try_receive() {
-                                if let Request::StopCrafting = r {
+                            if let Some(Request::StopCrafting) = self.try_receive() {
                                     return false;
-                                }
                             }
                             true
                         };
@@ -117,7 +115,7 @@ impl Worker {
                             // TODO: Do something useful with errors here.
                             craft.unwrap().craft_items().unwrap();
                         }
-                        self.reply(Response::EOW);
+                        self.reply(Response::Eow);
                     }
                     unknown => log::error!("Unexpected RPC received: {:?}", unknown),
                 };

@@ -9,8 +9,6 @@ mod rpc;
 mod task;
 
 use anyhow::{Error, Result};
-use env_logger;
-use log;
 use rpc::{Request, Response, Worker};
 use std::path::PathBuf;
 use std::sync::mpsc::{channel, Receiver, Sender};

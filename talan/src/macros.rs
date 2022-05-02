@@ -3,7 +3,6 @@ use crate::recipe;
 use anyhow::{anyhow, Result};
 use imgui::ImString;
 use serde::Deserialize;
-use std::path::PathBuf;
 
 // The |Toml| variant structures are used entirely for deserializing
 // from a user friendly format into the actions necessary for Talan.
@@ -73,7 +72,7 @@ pub fn read_macros_from_buffer(buffer: &str, out_vec: &mut Vec<Macro>) -> Result
     Ok(())
 }
 
-pub fn read_macros_from_file(path: &PathBuf, out_vec: &mut Vec<Macro>) -> Result<()> {
+pub fn read_macros_from_file(path: &std::path::Path, out_vec: &mut Vec<Macro>) -> Result<()> {
     read_macros_from_buffer(&std::fs::read_to_string(path)?, out_vec)
 }
 
@@ -308,7 +307,7 @@ mod tests {
     #[test]
     fn macros_empty() {
         let result = parse_line(r#""#);
-        assert_eq!(result.is_err(), true);
+        assert!(result.is_err());
     }
 
     // All endwalker actions with some comments and waits tossed in to ensure they're parsed out

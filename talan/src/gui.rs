@@ -5,7 +5,6 @@ use crate::rpc::{Request, Response};
 use crate::task::{Status, Task};
 use std::path::PathBuf;
 
-use gui_support;
 use imgui::*;
 use std::cmp::{max, min};
 use std::sync::mpsc::{Receiver, Sender};
@@ -115,7 +114,7 @@ impl<'a, 'b> Gui<'a> {
             .unwrap_or_else(|e| log::error!("rpc failed at line {}: {}", line!(), e.to_string()))
     }
 
-    pub fn start(&mut self, mut config: &mut config::Config) {
+    pub fn start(&mut self, config: &mut config::Config) {
         let system = gui_support::init(
             f64::from(WINDOW_SIZE[0]),
             f64::from(WINDOW_SIZE[1]),
@@ -185,19 +184,19 @@ impl<'a, 'b> Gui<'a> {
                         }
                         self.state.craft_status = Some(status);
                     }
-                    Response::EOW => {
+                    Response::Eow => {
                         // prune any completed tasks.
                         if config.options.remove_finished_tasks {
                             if let Some(status) = &self.state.craft_status {
-                                for i in 0..config.tasks.len() {
-                                    if status[i].finished > 0 {
+                                for (status, task) in status.iter().zip(&mut config.tasks) {
+                                    if status.finished > 0 {
                                         log::debug!(
                                             "Marking {}x in '{}' as complete",
-                                            status[i].finished,
-                                            config.tasks[i].recipe.name
+                                            status.finished,
+                                            task.recipe.name
                                         );
-                                        config.tasks[i].quantity -= status[i].finished;
-                                        config.tasks[i].update_estimate(&self.state.macros);
+                                        task.quantity -= status.finished;
+                                        task.update_estimate(&self.state.macros);
                                     }
                                 }
                             }
@@ -230,15 +229,15 @@ impl<'a, 'b> Gui<'a> {
 
             // Everything is rendered unconditionally here because the methods
             // themselves are data driven based on the state structure.
-            self.main_menu(&ui, &mut config);
-            self.add_tasks_window(&ui);
-            self.task_list_window(&ui, &mut config);
+            self.main_menu(ui, config);
+            self.add_tasks_window(ui);
+            self.task_list_window(ui, config);
             if self.state.show_gear_set_window {
-                self.gear_set_window(&ui, &mut config);
+                self.gear_set_window(ui, config);
             }
             // Always try to render a popup in case we have data primed for one.
-            self.modal_popup_window(&ui);
-            self.progress_window(&ui);
+            self.modal_popup_window(ui);
+            self.progress_window(ui);
         });
     }
 
@@ -278,21 +277,21 @@ impl<'a, 'b> Gui<'a> {
         if let Some(main_menu) = ui.begin_main_menu_bar() {
             self.state.previous_window_size = ui.window_size();
             if let Some(menu) = ui.begin_menu(im_str!("File"), true) {
-                if MenuItem::new(im_str!("Reload Macros")).build(&ui) {
+                if MenuItem::new(im_str!("Reload Macros")).build(ui) {
                     self.state.should_load_macros = true;
                 }
-                if MenuItem::new(im_str!("Save All")).build(&ui) {
+                if MenuItem::new(im_str!("Save All")).build(ui) {
                     match write_config(Some(&self.config_path), config) {
                         Ok(_) => log::info!("Wrote configuration to disk."),
                         Err(e) => log::error!("Failed to write configuration: {}", e.to_string()),
                     };
                 }
                 ui.separator();
-                MenuItem::new(im_str!("Exit")).build_with_ref(&ui, &mut self.state.should_exit);
+                MenuItem::new(im_str!("Exit")).build_with_ref(ui, &mut self.state.should_exit);
                 menu.end(ui);
             }
             if let Some(menu) = ui.begin_menu(im_str!("Tasks"), true) {
-                if MenuItem::new(im_str!("Craft All")).build(&ui) {
+                if MenuItem::new(im_str!("Craft All")).build(ui) {
                     // Get clippy to leave us alone about collapsing the if
                     if Gui::check_gear_sets(&mut self.state, config) {
                         self.send_to_worker(Request::Craft {
@@ -302,7 +301,7 @@ impl<'a, 'b> Gui<'a> {
                         });
                     }
                 }
-                if MenuItem::new(im_str!("Import From Clipboard")).build(&ui) {
+                if MenuItem::new(im_str!("Import From Clipboard")).build(ui) {
                     if let Ok(items) = import_tasks_from_clipboard() {
                         for i in &items {
                             log::debug!("item: {:#?}", i);
@@ -315,7 +314,7 @@ impl<'a, 'b> Gui<'a> {
                     }
                 }
                 ui.separator();
-                if MenuItem::new(im_str!("Clear Tasks")).build(&ui) {
+                if MenuItem::new(im_str!("Clear Tasks")).build(ui) {
                     config.tasks.clear();
                 }
                 menu.end(ui);
@@ -370,7 +369,7 @@ impl<'a, 'b> Gui<'a> {
                                 &ImString::new(format!("{} {}/{}", s.name, s.finished, s.total));
                             ProgressBar::new(s.finished as f32 / s.total as f32)
                                 .overlay_text(label)
-                                .build(&ui);
+                                .build(ui);
                         }
                         ui.text(" ".repeat(100));
                         if self.state.worker == WorkerStatus::Crafting {
@@ -382,7 +381,7 @@ impl<'a, 'b> Gui<'a> {
                         } else {
                             ui.text("Waiting for any queued actions to finish");
                         }
-                        token.pop(&ui);
+                        token.pop(ui);
                     }
                 });
         }
@@ -397,7 +396,7 @@ impl<'a, 'b> Gui<'a> {
             .collapsible(false)
             .movable(false)
             .resizable(false)
-            .build(&ui, || {
+            .build(ui, || {
                 self.state.previous_window_size[1] += ui.window_size()[1];
                 let labels: Vec<&ImStr> = self
                     .job_labels
@@ -457,7 +456,7 @@ impl<'a, 'b> Gui<'a> {
             .collapsible(false)
             .scroll_bar(true)
             .movable(false)
-            .build(&ui, || {
+            .build(ui, || {
                 // Both Tasks and their materials are enumerated so we can generate unique
                 // UI ids for widgets and prevent any sort of UI clash.
                 let task_count = config.tasks.len();
@@ -548,7 +547,7 @@ impl<'a, 'b> Gui<'a> {
                                 }
                                 ui.next_column();
 
-                                id.pop(&ui);
+                                id.pop(ui);
                             }
                         }
 
@@ -578,7 +577,7 @@ impl<'a, 'b> Gui<'a> {
                                 Some(TaskListModification::Delete(task_id));
                         }
                     }
-                    id.pop(&ui);
+                    id.pop(ui);
                 }
             });
     }
@@ -591,7 +590,7 @@ impl<'a, 'b> Gui<'a> {
             .resizable(false)
             .collapsible(false)
             .focused(true)
-            .build(&ui, || {
+            .build(ui, || {
                 ui.columns(2, im_str!("gear columns"), false);
                 let _w = ui.push_item_width(ui.window_size()[0] * 0.33);
                 for (i, name) in xiv::JOBS.iter().enumerate() {
@@ -618,7 +617,7 @@ impl<'a, 'b> Gui<'a> {
                         config.options.specialist[i] = false;
                     }
                     ui.next_column();
-                    id.pop(&ui);
+                    id.pop(ui);
                 }
             });
     }

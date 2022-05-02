@@ -48,7 +48,7 @@ pub fn init(width: f64, height: f64, title: &str) -> System {
     {
         let gl_window = display.gl_window();
         let window = gl_window.window();
-        platform.attach_window(imgui.io_mut(), &window, HiDpiMode::Rounded);
+        platform.attach_window(imgui.io_mut(), window, HiDpiMode::Rounded);
     }
 
     let hidpi_factor = platform.hidpi_factor();
@@ -109,18 +109,16 @@ impl System {
 
         while run {
             events_loop.poll_events(|event| {
-                platform.handle_event(imgui.io_mut(), &window, &event);
+                platform.handle_event(imgui.io_mut(), window, &event);
 
-                if let Event::WindowEvent { event, .. } = event {
-                    if let WindowEvent::CloseRequested = event {
+                if let Event::WindowEvent { event: WindowEvent::CloseRequested, .. } = event {
                         run = false;
-                    }
                 }
             });
 
             let io = imgui.io_mut();
             platform
-                .prepare_frame(io, &window)
+                .prepare_frame(io, window)
                 .expect("Failed to start frame");
             last_frame = io.update_delta_time(last_frame);
             let mut ui = imgui.frame();
@@ -128,7 +126,7 @@ impl System {
 
             let mut target = display.draw();
             target.clear_color_srgb(1.0, 1.0, 1.0, 1.0);
-            platform.prepare_render(&ui, &window);
+            platform.prepare_render(&ui, window);
             let draw_data = ui.render();
             renderer
                 .render(&mut target, draw_data)

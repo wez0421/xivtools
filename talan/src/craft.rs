@@ -6,7 +6,6 @@ use crate::task;
 use anyhow::Error;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
-use xiv;
 
 // Milliseconds to pad the GCD to account for latency
 const GCD_PADDING: u64 = 250;
@@ -97,10 +96,10 @@ where
             }
 
             // Navigate to the correct recipe based on the index provided
-            self.select_recipe(&task);
+            self.select_recipe(task);
 
             if !self.options.use_trial_synthesis {
-                self.select_materials(&task);
+                self.select_materials(task);
             }
             for task_index in 1..=task.quantity {
                 log::info!(

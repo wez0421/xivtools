@@ -1,7 +1,5 @@
 use anyhow::{anyhow, Error, Result};
-use log;
 use serde::Deserialize;
-use serde_json;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
@@ -142,6 +140,7 @@ struct ApiPagination {}
 #[allow(non_snake_case)]
 #[derive(Debug, Deserialize)]
 struct ApiReply<T> {
+    #[allow(dead_code)]
     pub Pagination: ApiPagination,
     pub Results: Vec<T>,
 }

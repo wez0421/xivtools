@@ -1,11 +1,7 @@
 use anyhow::{Error, Result};
-use env_logger;
-use log;
 use std::thread;
 use std::time::{Duration, Instant};
-use structopt;
 use structopt::StructOpt;
-use xiv;
 use xiv::ui;
 
 #[derive(Debug, StructOpt)]
